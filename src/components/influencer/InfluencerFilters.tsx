@@ -29,15 +29,15 @@ export default function InfluencerFilters() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Filters</CardTitle>
+    <Card className="sticky top-24">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-semibold">Filters</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div>
-          <Label className="text-sm font-medium mb-2 block">Niche</Label>
+          <Label className="text-sm font-medium mb-2 block text-zinc-700 dark:text-zinc-300">Niche</Label>
           <select
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
             value={searchParams.get('niche') || ''}
             onChange={(e) => updateFilter('niche', e.target.value)}
           >
@@ -51,9 +51,9 @@ export default function InfluencerFilters() {
         </div>
 
         <div>
-          <Label className="text-sm font-medium mb-2 block">Audience</Label>
+          <Label className="text-sm font-medium mb-2 block text-zinc-700 dark:text-zinc-300">Audience</Label>
           <select
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
             value={searchParams.get('audience') || ''}
             onChange={(e) => updateFilter('audience', e.target.value)}
           >
@@ -67,9 +67,9 @@ export default function InfluencerFilters() {
         </div>
 
         <div>
-          <Label className="text-sm font-medium mb-2 block">Gender</Label>
+          <Label className="text-sm font-medium mb-2 block text-zinc-700 dark:text-zinc-300">Gender</Label>
           <select
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
             value={searchParams.get('gender') || ''}
             onChange={(e) => updateFilter('gender', e.target.value)}
           >
@@ -83,9 +83,9 @@ export default function InfluencerFilters() {
         </div>
 
         <div>
-          <Label className="text-sm font-medium mb-2 block">Preferred Categories</Label>
+          <Label className="text-sm font-medium mb-2 block text-zinc-700 dark:text-zinc-300">Preferred Categories</Label>
           <select
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
             value={searchParams.get('category') || ''}
             onChange={(e) => updateFilter('category', e.target.value)}
           >
@@ -99,9 +99,9 @@ export default function InfluencerFilters() {
         </div>
 
         <div>
-          <Label className="text-sm font-medium mb-2 block">Sort By</Label>
+          <Label className="text-sm font-medium mb-2 block text-zinc-700 dark:text-zinc-300">Sort By</Label>
           <select
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
             value={searchParams.get('sortBy') || 'followers'}
             onChange={(e) => updateFilter('sortBy', e.target.value)}
           >

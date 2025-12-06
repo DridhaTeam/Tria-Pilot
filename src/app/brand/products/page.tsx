@@ -199,49 +199,57 @@ export default function BrandProductsPage() {
   }
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>
+    return (
+      <div className="min-h-screen bg-cream pt-24 pb-8">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="text-center py-12">Loading...</div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Box className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Manage Products</h1>
+    <div className="min-h-screen bg-cream pt-24 pb-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Box className="h-7 w-7 text-zinc-900 dark:text-zinc-100" />
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Manage Products</h1>
+          </div>
+          <p className="text-zinc-600 dark:text-zinc-400 text-base ml-10">
+            Add products that influencers can discover instantly in the marketplace
+          </p>
         </div>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Add products that influencers can discover instantly in the marketplace
-        </p>
-      </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Left: Add New Product Form */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Box className="h-5 w-5" />
-              <CardTitle>Add New Product</CardTitle>
-            </div>
-            <CardDescription>Upload up to 5 images and fill the details.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Product name</Label>
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
+          {/* Left: Add New Product Form */}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Box className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+                <CardTitle className="text-lg font-semibold">Add New Product</CardTitle>
+              </div>
+              <CardDescription>Upload up to 5 images and fill the details.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Product name</Label>
                 <Input
                   id="name"
                   placeholder="e.g., Sunset Satin Dress"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  className="w-full"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="category">Category</Label>
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Category</Label>
                 <select
                   id="category"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   required
@@ -255,11 +263,11 @@ export default function BrandProductsPage() {
                 </select>
               </div>
 
-              <div>
-                <Label htmlFor="audience">Audience</Label>
+              <div className="space-y-2">
+                <Label htmlFor="audience" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Audience</Label>
                 <select
                   id="audience"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
                   value={formData.audience}
                   onChange={(e) => setFormData({ ...formData, audience: e.target.value })}
                   required
@@ -273,53 +281,56 @@ export default function BrandProductsPage() {
                 </select>
               </div>
 
-              <div>
-                <Label htmlFor="price">Price (INR)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="price" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Price (INR)</Label>
                 <Input
                   id="price"
                   type="number"
                   placeholder="2500"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="w-full"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="link">Product URL</Label>
+              <div className="space-y-2">
+                <Label htmlFor="link" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Product URL</Label>
                 <Input
                   id="link"
                   type="url"
                   placeholder="https://yourbrand.com/product"
                   value={formData.link}
                   onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                  className="w-full"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="description">Description</Label>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Description</Label>
                 <textarea
                   id="description"
-                  className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full min-h-[100px] rounded-md border border-zinc-300 dark:border-zinc-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600 resize-y"
                   placeholder="Describe fabric, fit, and highlights..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="tags">Tags (comma separated)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="tags" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Tags (comma separated)</Label>
                 <Input
                   id="tags"
                   placeholder="evening, satin, trending"
                   value={formData.tags}
                   onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  className="w-full"
                 />
               </div>
 
               {/* Image Upload Section */}
-              <div>
-                <Label>Images (up to 5)</Label>
-                <div className="grid grid-cols-3 gap-4 mt-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Images (up to 5)</Label>
+                <div className="grid grid-cols-3 gap-3">
                   {[0, 1, 2, 3, 4].map((index) => (
                     <div key={index} className="relative">
                       <label
@@ -384,12 +395,12 @@ export default function BrandProductsPage() {
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-zinc-500 mt-2">
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">
                   Select which uploaded image becomes the clothing reference for Try-On.
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button type="submit" className="w-full mt-4" disabled={submitting}>
                 {submitting ? 'Saving...' : 'Save Product'}
               </Button>
             </form>
@@ -398,8 +409,8 @@ export default function BrandProductsPage() {
 
         {/* Right: Your Products */}
         <Card>
-          <CardHeader>
-            <CardTitle>Your Products</CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Your Products</CardTitle>
             <CardDescription>All products appear in influencer marketplace.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -415,20 +426,21 @@ export default function BrandProductsPage() {
                 {products.map((product) => {
                   const coverImage = product.images?.find((img: any) => img.isCoverImage)?.imagePath || product.imagePath
                   return (
-                    <div key={product.id} className="border rounded-lg p-4">
+                    <div key={product.id} className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:shadow-md transition-shadow">
                       {coverImage && (
                         <img
                           src={coverImage}
                           alt={product.name}
-                          className="w-full h-48 object-cover rounded mb-2"
+                          className="w-full h-48 object-cover rounded-lg mb-3"
+                          loading="lazy"
                         />
                       )}
-                      <h3 className="font-semibold">{product.name}</h3>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{product.name}</h3>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
                         {product.category || 'Uncategorized'}
                       </p>
                       {product.price && (
-                        <p className="text-sm font-semibold mt-1">₹{product.price.toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">₹{product.price.toLocaleString()}</p>
                       )}
                     </div>
                   )
@@ -437,6 +449,7 @@ export default function BrandProductsPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   )

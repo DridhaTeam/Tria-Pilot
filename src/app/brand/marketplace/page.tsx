@@ -161,38 +161,40 @@ export default async function BrandMarketplacePage({
   }))
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Discover Influencers</h1>
-        </div>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Find the perfect influencers for your brand collaborations
-        </p>
-      </div>
-
-      <div className="grid lg:grid-cols-4 gap-8">
-        {/* Filters Sidebar */}
-        <div className="lg:col-span-1">
-          <InfluencerFilters />
+    <div className="min-h-screen bg-cream pt-24 pb-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Users className="h-7 w-7 text-zinc-900 dark:text-zinc-100" />
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Discover Influencers</h1>
+          </div>
+          <p className="text-zinc-600 dark:text-zinc-400 text-base ml-10">
+            Find the perfect influencers for your brand collaborations
+          </p>
         </div>
 
-        {/* Influencer Grid */}
-        <div className="lg:col-span-3">
-          <InfluencerMarketplaceClient
-            influencers={influencersWithData.map((inf: any) => ({
-              ...inf,
-              bio: inf.bio ?? undefined,
-              followers: inf.followers ?? undefined,
-              pricePerPost: inf.pricePerPost ? Number(inf.pricePerPost) : undefined,
-              engagementRate: inf.engagementRate ? Number(inf.engagementRate) : undefined,
-              user: {
-                ...inf.user!,
-                name: inf.user?.name ?? undefined,
-              },
-            }))}
-          />
+        <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
+          {/* Filters Sidebar */}
+          <div className="lg:col-span-1">
+            <InfluencerFilters />
+          </div>
+
+          {/* Influencer Grid */}
+          <div className="lg:col-span-3">
+            <InfluencerMarketplaceClient
+              influencers={influencersWithData.map((inf: any) => ({
+                ...inf,
+                bio: inf.bio ?? undefined,
+                followers: inf.followers ?? undefined,
+                pricePerPost: inf.pricePerPost ? Number(inf.pricePerPost) : undefined,
+                engagementRate: inf.engagementRate ? Number(inf.engagementRate) : undefined,
+                user: {
+                  ...inf.user!,
+                  name: inf.user?.name ?? undefined,
+                },
+              }))}
+            />
+          </div>
         </div>
       </div>
     </div>

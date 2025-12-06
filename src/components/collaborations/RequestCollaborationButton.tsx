@@ -23,7 +23,7 @@ export default function RequestCollaborationButton({
     <>
       <Button
         variant="default"
-        className="w-full bg-green-600 hover:bg-green-700"
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm hover:shadow-md transition-all"
         size="lg"
         onClick={() => setIsOpen(true)}
       >

@@ -19,10 +19,14 @@ export function ReactQueryProvider({ children }: { children: React.ReactNode }) 
             refetchOnWindowFocus: false,
             // Refetch on reconnect
             refetchOnReconnect: true,
+            // Network mode: prefer cache first
+            networkMode: 'online',
           },
           mutations: {
             // Retry mutations once
             retry: 1,
+            // Network mode
+            networkMode: 'online',
           },
         },
       })

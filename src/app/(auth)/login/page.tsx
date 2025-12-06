@@ -18,10 +18,13 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      // Normalize email on client side too
+      const normalizedEmail = email.trim().toLowerCase()
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       })
 
       const data = await response.json()
@@ -30,11 +33,15 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed')
       }
 
-      toast.success('Welcome back!')
+      toast.success('Welcome back! 🎉')
       router.push('/dashboard')
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed')
+      const errorMessage = error instanceof Error ? error.message : 'Login failed'
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: 'top-center',
+      })
     } finally {
       setLoading(false)
     }

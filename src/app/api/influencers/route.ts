@@ -114,10 +114,11 @@ export async function GET(request: Request) {
     })
 
     // Batch fetch collaboration counts
+    // Note: influencerId in CollaborationRequest is User.id, not InfluencerProfile.id
     const collaborationCounts = await prisma.collaborationRequest.groupBy({
       by: ['influencerId'],
       where: {
-        influencerId: { in: userIds },
+        influencerId: { in: userIds }, // userIds are User.id values
         status: 'accepted',
       },
       _count: {

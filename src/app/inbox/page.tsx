@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, CheckCircle2, Clock, MessageSquare, Bell, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,6 +9,7 @@ import {
   useNotifications,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
+  useUser,
 } from '@/lib/react-query/hooks'
 
 function formatDistanceToNow(date: Date): string {
@@ -22,13 +24,39 @@ function formatDistanceToNow(date: Date): string {
 }
 
 export default function InboxPage() {
+  const router = useRouter()
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
   const { data, isLoading: loading } = useNotifications()
+  const { data: user } = useUser()
   const markAsReadMutation = useMarkNotificationRead()
   const markAllAsReadMutation = useMarkAllNotificationsRead()
 
   const notifications = data?.notifications || []
   const unreadCount = data?.unreadCount || 0
+
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read if unread
+    if (!notification.isRead) {
+      try {
+        await markAsReadMutation.mutateAsync(notification.id)
+      } catch (error) {
+        console.error('Failed to mark as read:', error)
+      }
+    }
+
+    // Navigate based on notification type
+    if (notification.type === 'collab_request' || notification.type === 'collab_accepted' || notification.type === 'collab_declined') {
+      // Navigate to collaborations page based on user role
+      if (user?.role === 'BRAND') {
+        router.push('/brand/collaborations')
+      } else if (user?.role === 'INFLUENCER') {
+        router.push('/influencer/collaborations')
+      } else {
+        // Fallback - try to determine from pathname or default
+        router.push('/brand/collaborations')
+      }
+    }
+  }
 
   const markAsRead = async (id: string) => {
     try {
@@ -156,8 +184,8 @@ export default function InboxPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => !notification.isRead && markAsRead(notification.id)}
-                  className={`bg-white rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-md ${!notification.isRead
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`bg-white rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] ${!notification.isRead
                       ? 'border-l-4 border-l-peach border-t-subtle border-r-subtle border-b-subtle bg-peach/5'
                       : 'border-subtle'
                     }`}

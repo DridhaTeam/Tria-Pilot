@@ -7,12 +7,26 @@ export function useUser() {
   return useQuery({
     queryKey: ['user'],
     queryFn: async () => {
-      const res = await fetch('/api/auth/me')
-      if (!res.ok) throw new Error('Failed to fetch user')
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        cache: 'no-store', // Always fetch fresh data from server
+      })
+      if (!res.ok) {
+        // If 401, user is not authenticated - return null instead of throwing
+        if (res.status === 401) {
+          return null
+        }
+        throw new Error('Failed to fetch user')
+      }
       const data = await res.json()
-      return data.user
+      return data.user || null
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - user data doesn't change often
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    gcTime: 60 * 1000, // Keep in cache for 1 minute
+    retry: false, // Don't retry on 401 errors
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
   })
 }
 
@@ -21,12 +35,17 @@ export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const res = await fetch('/api/notifications')
+      const res = await fetch('/api/notifications', {
+        cache: 'no-store',
+        next: { revalidate: 10 }, // Revalidate every 10 seconds
+      })
       if (!res.ok) throw new Error('Failed to fetch notifications')
       return res.json()
     },
     staleTime: 10 * 1000, // 10 seconds - notifications update frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchInterval: 30 * 1000, // Poll every 30 seconds
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   })
 }
 

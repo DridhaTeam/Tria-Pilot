@@ -6,21 +6,29 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { CheckCircle2, XCircle, Clock, MessageSquare, ArrowRight, Sparkles } from 'lucide-react'
 import Link from 'next/link'
-import { MessageSquare, User, ArrowRight, Sparkles } from 'lucide-react'
-import { useCollaborations } from '@/lib/react-query/collaborations'
+import { useCollaborations, useUpdateCollaborationStatus } from '@/lib/react-query/collaborations'
 
 interface Collaboration {
   id: string
   message: string
   status: string
   createdAt: string
-  influencer: {
+  brand: {
     id: string
     name?: string
-    influencerProfile?: {
-      bio?: string
+    brandProfile?: {
+      companyName?: string
     }
   }
   proposalDetails?: {
@@ -32,10 +40,33 @@ interface Collaboration {
   }
 }
 
-export default function BrandCollaborationsPage() {
+export default function InfluencerCollaborationsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all')
-  const { data: collaborationsData, isLoading: loading } = useCollaborations('sent')
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; collabId: string | null; status: 'accepted' | 'declined' | null }>({
+    open: false,
+    collabId: null,
+    status: null,
+  })
+
+  const { data: collaborationsData, isLoading: loading } = useCollaborations('received')
+  const updateStatusMutation = useUpdateCollaborationStatus()
+
   const collaborations: Collaboration[] = collaborationsData || []
+
+  const handleStatusChange = (collabId: string, status: 'accepted' | 'declined') => {
+    setConfirmDialog({ open: true, collabId, status })
+  }
+
+  const confirmStatusChange = () => {
+    if (!confirmDialog.collabId || !confirmDialog.status) return
+
+    updateStatusMutation.mutate({
+      id: confirmDialog.collabId,
+      status: confirmDialog.status,
+    })
+
+    setConfirmDialog({ open: false, collabId: null, status: null })
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -62,28 +93,21 @@ export default function BrandCollaborationsPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex justify-between items-start mb-8"
+          className="mb-8"
         >
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ duration: 0.5, type: 'spring' }}
-              >
-                <MessageSquare className="h-7 w-7 text-zinc-900 dark:text-zinc-100" />
-              </motion.div>
-              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Collaborations</h1>
-            </div>
-            <p className="text-zinc-600 dark:text-zinc-400 text-base ml-10">
-              Manage your collaboration requests sent to influencers
-            </p>
+          <div className="flex items-center gap-3 mb-2">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ duration: 0.5, type: 'spring' }}
+            >
+              <MessageSquare className="h-7 w-7 text-zinc-900 dark:text-zinc-100" />
+            </motion.div>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Collaborations</h1>
           </div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button asChild className="shrink-0">
-              <Link href="/brand/marketplace">Discover Influencers</Link>
-            </Button>
-          </motion.div>
+          <p className="text-zinc-600 dark:text-zinc-400 text-base ml-10">
+            Manage collaboration requests from brands
+          </p>
         </motion.div>
 
         {/* Filter Tabs */}
@@ -163,16 +187,11 @@ export default function BrandCollaborationsPage() {
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
               No collaborations found
             </h3>
-            <p className="text-zinc-600 dark:text-zinc-400 text-center max-w-md mb-6">
+            <p className="text-zinc-600 dark:text-zinc-400 text-center max-w-md">
               {filter === 'all'
-                ? "You haven't sent any collaboration requests yet. Start by discovering influencers in the marketplace!"
+                ? "You haven't received any collaboration requests yet. Brands will send you requests through the platform."
                 : `No ${filter} collaborations found.`}
             </p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button asChild>
-                <Link href="/brand/marketplace">Browse Influencers</Link>
-              </Button>
-            </motion.div>
           </motion.div>
         ) : (
           <AnimatePresence mode="wait">
@@ -191,19 +210,20 @@ export default function BrandCollaborationsPage() {
                   }}
                   whileHover={{ scale: 1.01, y: -2 }}
                 >
-                  <Card className="hover:shadow-xl transition-all duration-300">
+                  <Card className={`hover:shadow-xl transition-all duration-300 ${
+                    updateStatusMutation.isPending && updateStatusMutation.variables?.id === collab.id ? 'opacity-60 pointer-events-none' : ''
+                  }`}>
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <User className="h-5 w-5 text-zinc-500" />
-                          {collab.influencer.name || 'Influencer'}
+                        <CardTitle className="text-lg">
+                          {collab.brand.brandProfile?.companyName || collab.brand.name || 'Brand'}
                         </CardTitle>
                         {getStatusBadge(collab.status)}
                       </div>
                       <CardDescription className="text-xs">
-                        Sent: {new Date(collab.createdAt).toLocaleDateString('en-US', {
+                        Received: {new Date(collab.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -256,14 +276,73 @@ export default function BrandCollaborationsPage() {
                     </div>
                   )}
 
-                  <div className="pt-2">
-                    <Link
-                      href={`/brand/influencers/${collab.influencer.id}`}
-                      className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1"
+                  {collab.status === 'pending' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800"
                     >
-                      View Influencer Profile <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </div>
+                      <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={() => handleStatusChange(collab.id, 'accepted')}
+                          disabled={updateStatusMutation.isPending && updateStatusMutation.variables?.id === collab.id}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm hover:shadow-md transition-all"
+                        >
+                          {updateStatusMutation.isPending && updateStatusMutation.variables?.id === collab.id ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              className="flex items-center gap-2"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              Processing...
+                            </motion.div>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Accept
+                            </>
+                          )}
+                        </Button>
+                      </motion.div>
+                      <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={() => handleStatusChange(collab.id, 'declined')}
+                          disabled={updateStatusMutation.isPending && updateStatusMutation.variables?.id === collab.id}
+                          variant="outline"
+                          className="w-full border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-400 transition-all"
+                        >
+                          {updateStatusMutation.isPending && updateStatusMutation.variables?.id === collab.id ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              className="flex items-center gap-2"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              Processing...
+                            </motion.div>
+                          ) : (
+                            <>
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Decline
+                            </>
+                          )}
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+
+                  {collab.proposalDetails?.productId && (
+                    <div className="pt-2">
+                      <Link
+                        href={`/marketplace/${collab.proposalDetails.productId}`}
+                        className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1"
+                      >
+                        View Product <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  )}
                 </CardContent>
                   </Card>
                 </motion.div>
@@ -271,6 +350,44 @@ export default function BrandCollaborationsPage() {
             </div>
           </AnimatePresence>
         )}
+
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ open, collabId: null, status: null })}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {confirmDialog.status === 'accepted' ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-600" />
+                )}
+                Confirm {confirmDialog.status === 'accepted' ? 'Acceptance' : 'Decline'}
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to {confirmDialog.status === 'accepted' ? 'accept' : 'decline'} this collaboration request? 
+                {confirmDialog.status === 'accepted' && ' This action will notify the brand and start the collaboration.'}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDialog({ open: false, collabId: null, status: null })}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmStatusChange}
+                className={
+                  confirmDialog.status === 'accepted'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }
+              >
+                {confirmDialog.status === 'accepted' ? 'Accept' : 'Decline'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

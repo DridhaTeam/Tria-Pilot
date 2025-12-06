@@ -43,8 +43,9 @@ export default async function BrandDashboard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Brand Dashboard</h1>
+    <div className="min-h-screen bg-cream pt-24">
+      <div className="container mx-auto px-6 py-8">
+        <h1 className="text-3xl font-serif text-charcoal mb-6">Brand Dashboard</h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
@@ -120,6 +121,7 @@ export default async function BrandDashboard() {
             </Card>
           ))}
         </div>
+      </div>
       </div>
     </div>
   )

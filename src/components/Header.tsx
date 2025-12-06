@@ -19,11 +19,13 @@ import {
     Home,
 } from 'lucide-react'
 import { useUser } from '@/lib/react-query/hooks'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function Header() {
     const pathname = usePathname()
     const router = useRouter()
-    const { data: user, isLoading } = useUser()
+    const queryClient = useQueryClient()
+    const { data: user, isLoading, refetch: refetchUser } = useUser()
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -38,37 +40,73 @@ export default function Header() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
+    // Refetch user data when navigating to brand/influencer pages to ensure fresh data
+    useEffect(() => {
+        if (pathname && (pathname.startsWith('/brand') || pathname.startsWith('/influencer'))) {
+            // Refetch user data to ensure we have the latest role
+            refetchUser()
+        }
+    }, [pathname, refetchUser])
+
     if (isAuthPage) {
         return null
     }
 
     const handleLogout = async () => {
         try {
-            const response = await fetch('/api/auth/logout', { method: 'POST' })
-            if (response.ok) {
-                router.push('/login')
-                router.refresh()
+            // Invalidate and remove user query from cache
+            queryClient.setQueryData(['user'], null)
+            queryClient.invalidateQueries({ queryKey: ['user'] })
+            queryClient.removeQueries({ queryKey: ['user'] })
+            
+            // Clear React Query cache
+            queryClient.clear()
+            
+            // Call logout API
+            const response = await fetch('/api/auth/logout', { 
+                method: 'POST',
+                credentials: 'include' // Ensure cookies are sent
+            })
+            
+            // Clear any local storage/cache
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
             }
+            
+            // Force a hard redirect to login page (this ensures all state is cleared)
+            window.location.href = '/login'
         } catch (error) {
             console.error('Logout error:', error)
+            // Still redirect on error to ensure user can log in again
+            queryClient.setQueryData(['user'], null)
+            queryClient.invalidateQueries({ queryKey: ['user'] })
+            queryClient.removeQueries({ queryKey: ['user'] })
+            queryClient.clear()
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            window.location.href = '/login'
         }
     }
 
     // Navigation links based on auth state and role
     const influencerLinks = [
-        { href: '/influencer/try-on', label: 'Try-On Studio', icon: Camera },
-        { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
-        { href: '/influencer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/inbox', label: 'Inbox', icon: Mail },
         { href: '/profile', label: 'Profile', icon: User },
+        { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
+        { href: '/influencer/try-on', label: 'Try-On Studio', icon: Camera },
+        { href: '/influencer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ]
 
     const brandLinks = [
-        { href: '/brand/marketplace', label: 'Marketplace', icon: ShoppingBag },
-        { href: '/brand/products', label: 'Products', icon: Box },
         { href: '/brand/campaigns', label: 'Campaigns', icon: Megaphone },
-        { href: '/inbox', label: 'Inbox', icon: Mail },
         { href: '/profile', label: 'Profile', icon: User },
+        { href: '/brand/marketplace', label: 'Influencers', icon: ShoppingBag },
+        { href: '/brand/ads', label: 'Ads', icon: Sparkles },
+        { href: '/brand/products', label: 'Products', icon: Box },
+        { href: '/inbox', label: 'Inbox', icon: Mail },
     ]
 
     const publicLinks = [
@@ -79,8 +117,36 @@ export default function Header() {
     ]
 
     const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/')
-    const links = user?.role === 'BRAND' ? brandLinks : user?.role === 'INFLUENCER' ? influencerLinks : []
-    const userInitial = user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'
+    
+    // Only show navigation links if user is actually logged in (not just loading)
+    const isLoggedIn = !isLoading && user !== null && user !== undefined
+    
+    // Determine which links to show based on user role
+    let links: typeof influencerLinks | typeof brandLinks = []
+    if (isLoggedIn && user) {
+      if (user.role === 'BRAND') {
+        links = brandLinks
+      } else if (user.role === 'INFLUENCER') {
+        links = influencerLinks
+      }
+    }
+    
+    const userInitial = isLoggedIn && user
+      ? (user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U')
+      : 'U'
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development' && pathname?.startsWith('/brand')) {
+      console.log('[Header Debug]', {
+        pathname,
+        isLoading,
+        user,
+        isLoggedIn,
+        userRole: user?.role,
+        linksCount: links.length,
+        showingLinks: links.map(l => l.label),
+      })
+    }
 
     return (
         <motion.header
@@ -100,28 +166,36 @@ export default function Header() {
                     </Link>
 
                     {/* Desktop Navigation */}
-                    {user ? (
+                    {isLoggedIn ? (
                         // Logged in navigation
                         <nav className="hidden md:flex items-center gap-1">
-                            {links.map((link) => {
+                            {links.map((link, index) => {
                                 const Icon = link.icon
                                 return (
-                                    <Link
+                                    <motion.div
                                         key={link.href}
-                                        href={link.href}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${isActive(link.href)
-                                                ? 'bg-charcoal text-cream'
-                                                : 'text-charcoal/70 hover:text-charcoal hover:bg-charcoal/5'
-                                            }`}
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                     >
-                                        <Icon className="w-4 h-4" />
-                                        {link.label}
-                                    </Link>
+                                        <Link
+                                            href={link.href}
+                                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${isActive(link.href)
+                                                    ? 'bg-charcoal text-cream shadow-md'
+                                                    : 'text-charcoal/70 hover:text-charcoal hover:bg-charcoal/5'
+                                                }`}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            {link.label}
+                                        </Link>
+                                    </motion.div>
                                 )
                             })}
                         </nav>
                     ) : (
-                        // Public navigation
+                        // Public navigation (show when not logged in or still loading)
                         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-charcoal/70">
                             {publicLinks.map((link) => (
                                 <Link
@@ -137,7 +211,7 @@ export default function Header() {
 
                     {/* Right Side Actions */}
                     <div className="flex items-center gap-4">
-                        {user ? (
+                        {isLoggedIn ? (
                             <>
                                 {/* User Avatar */}
                                 <div className="hidden md:flex items-center gap-3">
@@ -195,7 +269,7 @@ export default function Header() {
                         className="md:hidden bg-cream border-t border-subtle"
                     >
                         <div className="container mx-auto px-6 py-6 space-y-4">
-                            {user ? (
+                            {isLoggedIn ? (
                                 <>
                                     {/* User Info */}
                                     <div className="flex items-center gap-3 pb-4 border-b border-subtle">
@@ -203,8 +277,8 @@ export default function Header() {
                                             {userInitial}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-charcoal">{user.name || user.email}</p>
-                                            <p className="text-sm text-charcoal/60">{user.role}</p>
+                                            <p className="font-medium text-charcoal">{user?.name || user?.email}</p>
+                                            <p className="text-sm text-charcoal/60">{user?.role}</p>
                                         </div>
                                     </div>
 

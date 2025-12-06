@@ -218,6 +218,7 @@ export async function GET(request: Request) {
 
     let collaborations
     if (type === 'sent') {
+      // Brands viewing requests they sent to influencers
       collaborations = await prisma.collaborationRequest.findMany({
         where: { brandId: dbUser.id },
         include: {
@@ -230,6 +231,7 @@ export async function GET(request: Request) {
         orderBy: { createdAt: 'desc' },
       })
     } else {
+      // Influencers viewing requests they received from brands (type === 'received' or no type)
       collaborations = await prisma.collaborationRequest.findMany({
         where: { influencerId: dbUser.id },
         include: {

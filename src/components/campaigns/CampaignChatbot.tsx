@@ -75,53 +75,53 @@ export default function CampaignChatbot() {
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5" />
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+          <Bot className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
           Campaign Assistant
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col pt-0">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[400px] max-h-[600px]">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[400px] max-h-[600px] pr-2">
           {messages.map((message, index) => (
             <div
               key={index}
-              className={`flex gap-3 ${
+              className={`flex gap-3 items-start ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
               {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-primary-foreground" />
+                <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0 mt-1">
+                  <Bot className="h-4 w-4 text-white dark:text-zinc-900" />
                 </div>
               )}
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                className={`max-w-[80%] rounded-lg px-4 py-2.5 ${
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-zinc-100 dark:bg-zinc-800'
+                    ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
               </div>
               {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4" />
+                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0 mt-1">
+                  <User className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
                 </div>
               )}
             </div>
           ))}
           {loading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <Bot className="h-4 w-4 text-primary-foreground" />
+            <div className="flex gap-3 justify-start items-start">
+              <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <Bot className="h-4 w-4 text-white dark:text-zinc-900" />
               </div>
-              <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg px-4 py-2">
+              <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg px-4 py-2.5">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-2 h-2 bg-zinc-500 dark:bg-zinc-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-zinc-500 dark:bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-zinc-500 dark:bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </div>
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function CampaignChatbot() {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2 pt-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -138,7 +138,7 @@ export default function CampaignChatbot() {
             disabled={loading}
             className="flex-1"
           />
-          <Button type="submit" disabled={loading || !input.trim()}>
+          <Button type="submit" disabled={loading || !input.trim()} size="icon">
             <Send className="h-4 w-4" />
           </Button>
         </form>

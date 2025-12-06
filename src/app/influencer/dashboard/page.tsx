@@ -68,7 +68,7 @@ export default async function InfluencerDashboard() {
       title: 'Collaborations',
       description: 'Check brand collaboration requests',
       icon: Users,
-      href: '/inbox',
+      href: '/influencer/collaborations',
       color: 'from-green-400 to-emerald-400',
     },
   ]
