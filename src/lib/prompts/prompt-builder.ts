@@ -53,17 +53,17 @@ Rules:
   let presetSections = ''
   if (preset) {
     presetSections = `\n\nPRESET: ${preset.name}\n`
-    
+
     // Background
     if (preset.background) {
       presetSections += `Background: ${preset.background}\n`
     }
-    
+
     // Lighting
     if (preset.lighting) {
       presetSections += `Lighting: ${preset.lighting.type} from ${preset.lighting.source}, ${preset.lighting.direction} direction, ${preset.lighting.quality} quality, ${preset.lighting.colorTemp} color temperature\n`
     }
-    
+
     // Camera
     if (preset.camera_style) {
       presetSections += `Camera: ${preset.camera_style.angle} angle, ${preset.camera_style.lens} lens, ${preset.camera_style.framing} framing`
@@ -72,14 +72,14 @@ Rules:
       }
       presetSections += `\n`
     }
-    
+
     // Deviation notes
     if (preset.deviation !== undefined) {
-      const deviationNote = preset.deviation <= 0.1 
+      const deviationNote = preset.deviation <= 0.1
         ? 'STRICT: Apply preset style conservatively, minimal changes to scene.'
         : preset.deviation <= 0.15
-        ? 'MODERATE: Apply preset style with balanced artistic freedom.'
-        : 'FLEXIBLE: Apply preset style with more creative interpretation, but still preserve identity.'
+          ? 'MODERATE: Apply preset style with balanced artistic freedom.'
+          : 'FLEXIBLE: Apply preset style with more creative interpretation, but still preserve identity.'
       presetSections += `Deviation: ${preset.deviation} - ${deviationNote}\n`
     }
   }
@@ -181,13 +181,14 @@ function sanitizePreset(preset: TryOnPreset | null): {
     return {
       presetUsed: null,
       positive: [
-        'Natural lighting',
-        'Neutral background tone',
-        'Clean, realistic atmosphere',
-        'Balanced color harmony',
-        'Authentic camera feel',
+        'Natural lighting with realistic shadows',
+        'Keep the original background from the input photo',
+        'Candid photography aesthetic, not stock photo',
+        'Subtle natural imperfections (not overly perfect)',
+        'Authentic camera feel with natural depth',
         'Subtle natural film grain',
         'Realistic fabric texture fidelity',
+        'Match lighting between person and environment',
       ],
       negative: [
         'No identity changes',
@@ -196,6 +197,8 @@ function sanitizePreset(preset: TryOnPreset | null): {
         'No body modifications',
         'No plastic skin or oversmoothing',
         'No HDR over-processing',
+        'No CGI-like smooth backgrounds',
+        'No unnaturally perfect environments',
       ],
       deviation: 0.1,
       warnings: [],
@@ -224,6 +227,9 @@ function sanitizePreset(preset: TryOnPreset | null): {
         ...posRes.sanitized,
         'Subtle natural film grain',
         'Realistic fabric texture fidelity',
+        'Candid photography aesthetic with natural imperfections',
+        'Real-world background with authentic textures and depth',
+        'Natural lighting with realistic shadows and highlights',
       ])
     ),
     negative: Array.from(
@@ -231,6 +237,9 @@ function sanitizePreset(preset: TryOnPreset | null): {
         ...negRes.sanitized,
         'No plastic skin or oversmoothing',
         'No HDR over-processing',
+        'No CGI-like smooth backgrounds',
+        'No unnaturally perfect or stock photo environments',
+        'No overly symmetrical or artificial compositions',
       ])
     ),
     deviation,
@@ -250,6 +259,9 @@ export function buildTryOnPrompt(
     positive,
     negative,
     deviation,
+    background: presetUsed?.background,
+    lighting: presetUsed?.lighting,
+    camera: presetUsed?.camera_style,
     safe: presetUsed ? true : true,
   })
   if (warnings.length > 0) {
@@ -258,27 +270,138 @@ export function buildTryOnPrompt(
   if (blocked) {
     console.warn('Preset contained unsafe keywords and was blocked')
   }
+
   const styleBlock = positive.length > 0 ? positive.join('\n') : ''
   const avoidBlock = negative.length > 0 ? negative.join('\n') : ''
+
+  // Build preset-specific sections for background, lighting, camera
+  let presetDetails = ''
+  if (presetUsed) {
+    presetDetails += `\n### Preset: ${presetUsed.name}\n`
+    presetDetails += `${presetUsed.description}\n\n`
+
+    if (presetUsed.background) {
+      presetDetails += `### Background/Scene\n${presetUsed.background}\n\n`
+    }
+
+    // Add background elements (people, objects, atmosphere) for realism
+    if (presetUsed.backgroundElements) {
+      presetDetails += `### Scene Elements for Realism (IMPORTANT)\n`
+      if (presetUsed.backgroundElements.people) {
+        presetDetails += `- People in Background: ${presetUsed.backgroundElements.people}\n`
+      }
+      if (presetUsed.backgroundElements.objects) {
+        presetDetails += `- Objects/Props: ${presetUsed.backgroundElements.objects}\n`
+      }
+      if (presetUsed.backgroundElements.atmosphere) {
+        presetDetails += `- Scene Atmosphere: ${presetUsed.backgroundElements.atmosphere}\n`
+      }
+      presetDetails += '\n'
+    }
+
+    if (presetUsed.lighting) {
+      presetDetails += `### Lighting\n`
+      presetDetails += `- Type: ${presetUsed.lighting.type}\n`
+      presetDetails += `- Source: ${presetUsed.lighting.source}\n`
+      presetDetails += `- Direction: ${presetUsed.lighting.direction}\n`
+      presetDetails += `- Quality: ${presetUsed.lighting.quality}\n`
+      presetDetails += `- Color Temperature: ${presetUsed.lighting.colorTemp}\n\n`
+    }
+
+    if (presetUsed.camera_style) {
+      presetDetails += `### Camera\n`
+      presetDetails += `- Angle: ${presetUsed.camera_style.angle}\n`
+      presetDetails += `- Lens: ${presetUsed.camera_style.lens}\n`
+      presetDetails += `- Framing: ${presetUsed.camera_style.framing}\n`
+      if (presetUsed.camera_style.depthOfField) {
+        presetDetails += `- Depth of Field: ${presetUsed.camera_style.depthOfField}\n`
+      }
+      presetDetails += '\n'
+    }
+
+    // Add pose guidance if preset defines it
+    if (presetUsed.pose) {
+      presetDetails += `### Pose & Expression Guidance\n`
+      presetDetails += `- Stance: ${presetUsed.pose.stance}\n`
+      presetDetails += `- Arms: ${presetUsed.pose.arms}\n`
+      presetDetails += `- Expression: ${presetUsed.pose.expression}\n`
+      presetDetails += `- Energy: ${presetUsed.pose.energy}\n`
+      if (presetUsed.pose.bodyAngle) {
+        presetDetails += `- Body Angle: ${presetUsed.pose.bodyAngle}\n`
+      }
+      presetDetails += '\n'
+    }
+  }
+
   let prompt = ''
-  prompt += 'You are generating a virtual clothing try-on photo.\n\n'
-  prompt += '### Identity Rules\n'
-  prompt += '- Keep the person exactly the same as the input.\n'
-  prompt += '- Do not change face, hair, body, pose, expression, or camera angle.\n'
-  prompt += '- Maintain original proportions and framing.\n\n'
+
+  // PUT SCENE/BACKGROUND FIRST for maximum impact
+  if (presetUsed) {
+    prompt += `🎬 SCENE/BACKGROUND (APPLY THIS SCENE - THIS IS THE MAIN VISUAL CHANGE)\n`
+    prompt += `=================================================================\n`
+    prompt += `**PRESET: ${presetUsed.name}**\n`
+    prompt += `${presetUsed.description}\n\n`
+
+    if (presetUsed.background) {
+      prompt += `📍 LOCATION/BACKGROUND: ${presetUsed.background}\n`
+    }
+
+    if (presetUsed.backgroundElements) {
+      if (presetUsed.backgroundElements.people) {
+        prompt += `👥 PEOPLE IN SCENE: ${presetUsed.backgroundElements.people}\n`
+      }
+      if (presetUsed.backgroundElements.objects) {
+        prompt += `🎯 OBJECTS/PROPS: ${presetUsed.backgroundElements.objects}\n`
+      }
+      if (presetUsed.backgroundElements.atmosphere) {
+        prompt += `🌟 ATMOSPHERE: ${presetUsed.backgroundElements.atmosphere}\n`
+      }
+    }
+
+    if (presetUsed.lighting) {
+      prompt += `💡 LIGHTING: ${presetUsed.lighting.type} from ${presetUsed.lighting.source}, ${presetUsed.lighting.quality}, ${presetUsed.lighting.colorTemp}\n`
+    }
+
+    if (presetUsed.camera_style) {
+      prompt += `📷 CAMERA: ${presetUsed.camera_style.angle}, ${presetUsed.camera_style.lens}, ${presetUsed.camera_style.framing}\n`
+    }
+
+    if (presetUsed.pose) {
+      prompt += `🧍 POSE: ${presetUsed.pose.stance}. Arms: ${presetUsed.pose.arms}. Expression: ${presetUsed.pose.expression}\n`
+    }
+
+    prompt += `\n⚠️ THIS SCENE/BACKGROUND IS MANDATORY - The output MUST show this environment.\n`
+    prompt += `=================================================================\n\n`
+  }
+
+  prompt += '### ⛔ IDENTITY LOCK (MANDATORY - COPY FACE EXACTLY)\n'
+  prompt += '• COPY the EXACT face from the reference - DO NOT generate a different face\n'
+  prompt += '• COPY the EXACT jawline, face width, face length - NO changes allowed\n'
+  prompt += '• COPY the EXACT eyes, nose, lips, skin tone - NO changes allowed\n'
+  prompt += '• COPY the EXACT beard/facial hair - DO NOT modify\n'
+  prompt += '• COPY the EXACT glasses if present - DO NOT remove\n'
+  prompt += '• THIS IS THE SAME PERSON - IDENTITY PRESERVED\n\n'
+
   prompt += '### Clothing Rules\n'
-  prompt += '- Replace only the clothing with the reference image.\n'
-  prompt += '- Fit must look natural and anatomically correct.\n\n'
-  prompt += '### Style (Preset Layer)\n'
-  prompt += styleBlock + '\n\n'
+  prompt += '- Apply the clothing from the reference garment image onto the person.\n'
+  prompt += '- Match exact color, pattern, and texture from clothing reference.\n\n'
+
+  if (presetUsed) {
+    prompt += '### Apply These Style Modifiers:\n'
+    prompt += styleBlock + '\n\n'
+  }
+
   prompt += '### Avoid\n'
   prompt += avoidBlock + '\n\n'
+
   prompt += '### Output\n'
-  prompt += 'Generate a realistic, high-quality portrait of the same person wearing the reference clothing with the preset’s lighting and mood applied.'
+  prompt += 'Generate: SAME PERSON (face copied from reference) + CLOTHING + SCENE.'
+
   const sanitizedPrompt = FORBIDDEN_PHRASES.reduce((acc, p) => {
     const replacement = SAFE_REPLACEMENTS[p] ?? 'preserve identity'
     return acc.replace(new RegExp(p, 'gi'), replacement)
   }, prompt)
+
   console.log('Final Computed Prompt (sanitized):', sanitizedPrompt)
   return sanitizedPrompt
 }

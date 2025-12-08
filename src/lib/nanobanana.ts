@@ -92,40 +92,32 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     // For Gemini 3 Pro, we can use up to 14 reference images (6 objects + 5 humans) for character consistency
     const contents: ContentListUnion = []
 
-    // 1. Add STRICT lock instructions before the prompt
-    const enhancedPrompt = `🔒 ABSOLUTE IDENTITY LOCK - ZERO TOLERANCE
+    // 1. Pro-specific vs Flash prompting
+    // Pro needs "character DNA" approach, Flash works with simpler prompts
+    const isPro = model === 'gemini-3-pro-image-preview'
 
-FACE RULES (NON-NEGOTIABLE):
-- Preserve EXACT facial structure (jawline, cheekbones, lips, nose, eyes)
-- Preserve EXACT skin tone (no lightening, darkening, or smoothing)
-- Preserve EXACT eye shape, spacing, and eyebrows
-- DO NOT add or remove hair
-- DO NOT change hair color, volume, or length
-- DO NOT add makeup or filters
-- DO NOT beautify or enhance the face
+    const enhancedPrompt = isPro
+      ? `Character Reference System: The person image is the character's DNA. Generate the same character wearing the clothing.
 
-BODY RULES (NON-NEGOTIABLE):
-- Preserve EXACT body proportions (no slimming or bulking)
-- Preserve EXACT pose and posture
-- Preserve EXACT shoulder width and arm position
-- DO NOT add muscles or reshape body
-- DO NOT change neck angle or hand visibility
+CHARACTER DNA (from person image):
+- This is the character reference. Use this exact person's face, body shape, skin tone, hair.
+- Face must be 100% identical to the reference - same face shape, same features, same expression style.
+- If character has glasses, beard, or distinctive features, they MUST appear in the output.
 
-CLOTHING RULES (STRICT):
-- Apply clothing with EXACT color, pattern, and texture from reference
-- Match buttons, stitching, folds, and micro-details precisely
-- Sleeve length MUST match original
-- No invented textures or colors
-- No accessories added unless explicitly in prompt
+CLOTHING (from clothing image):
+- Dress the character in this exact outfit.
+- Match the exact color, pattern, and style.
 
-BACKGROUND RULES:
-- Only change background if explicitly instructed in prompt
-- Preserve original lighting direction and perspective
-- No hallucination effects or cinematic bloom
+SCENE: ${prompt}
 
-⚠️ CRITICAL: This is a CLOTHING SWAP ONLY. The person's identity (face, hair, body) must remain 100% identical to the reference image.
+OUTPUT: Same character from reference, wearing the clothing, in the scene. Face 100% same as character reference.`
+      : `Virtual try-on: Show the same person from the reference photo wearing the clothing from the product photo.
 
-${prompt}`
+PERSON: Use the exact face, body, and features from the person reference image. Face 100% same as reference.
+CLOTHING: Put the exact clothing from the product reference onto the person.
+SCENE: ${prompt}
+
+Keep the person's face, hair, glasses, beard exactly as shown in the reference photo. Do not modify the person's appearance.`
 
     contents.push(enhancedPrompt)
 
@@ -139,20 +131,10 @@ ${prompt}`
       throw new Error('Invalid person image: image data is too short or empty')
     }
 
-    // For Gemini 3 Pro, we can add the person image multiple times for better face lock
-    // (up to 5 human references allowed)
-    if (model === 'gemini-3-pro-image-preview') {
-      // Add person image as primary reference (counts as 1 of 5 human references)
-      contents.push({
-        inlineData: {
-          data: cleanPersonImage,
-          mimeType: 'image/jpeg',
-        },
-      } as any)
-      // Note: We could add multiple angles/views here if available for even better consistency
-      // For now, we use the single person image as the primary reference
-    } else {
-      // Flash model: single person image (up to 3 images total)
+    // Pro model: Add person image 3x for stronger character DNA (uses human reference slots)
+    // Flash model: Single image works best
+    const personCopies = isPro ? 3 : 1
+    for (let i = 0; i < personCopies; i++) {
       contents.push({
         inlineData: {
           data: cleanPersonImage,
@@ -160,8 +142,10 @@ ${prompt}`
         },
       } as any)
     }
+    console.log(`📸 Added person image ${personCopies}x for ${isPro ? 'character DNA' : 'face reference'}`)
 
-    // 3. Add clothing image if provided (counts as 1 of 6 object references for Pro)
+    // 3. Add clothing image if provided
+    // USE SAME APPROACH FOR BOTH MODELS - single clothing image
     if (clothingImage) {
       const cleanClothingImage = clothingImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanClothingImage && cleanClothingImage.length >= 100) {
@@ -171,15 +155,18 @@ ${prompt}`
             mimeType: 'image/jpeg',
           },
         } as any)
+        console.log('👕 Added clothing image (1x) for clothing reference')
       } else {
         console.warn('Clothing image appears invalid, skipping')
       }
     }
 
     // Build image config
-    const imageConfig: ImageConfig = {
-      aspectRatio: aspectRatio as any,
-    }
+    const imageConfig = {
+      aspectRatio: aspectRatio,
+      // Enable person generation for face consistency
+      personGeneration: 'allow_adult',
+    } as ImageConfig
 
     if (model === 'gemini-3-pro-image-preview' && resolution) {
       imageConfig.imageSize = resolution as any

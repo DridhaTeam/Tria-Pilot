@@ -100,15 +100,15 @@ function buildFinalPromptWithPreset(
       // Continue anyway but log the issue
     }
   }
-  
+
   // Build prompt using the unified builder that outputs the exact final format
   let finalPrompt = buildTryOnPrompt('', '', preset)
-  
+
   // Apply safety rules
   finalPrompt = applySafetyRules(finalPrompt)
-  
+
   // Final prompt must keep exact structure; do not append extra sections
-  
+
   return finalPrompt
 }
 
@@ -157,7 +157,7 @@ export async function generatePromptFromAnalysis(
     return finalPrompt
   } catch (error) {
     console.error('ChatGPT prompt orchestrator error:', error)
-    
+
     // If it's an API key error, throw it so the user knows
     if (error instanceof Error) {
       if (error.message.includes('API key') || error.message.includes('401') || error.message.includes('invalid_api_key')) {
@@ -165,7 +165,7 @@ export async function generatePromptFromAnalysis(
         throw new Error('OpenAI API key is invalid or not configured correctly. Please check your API key in .env.local')
       }
     }
-    
+
     // For other errors, build final prompt with preset data directly (no ChatGPT)
     console.warn('Using direct preset merge due to ChatGPT error')
     const finalPrompt = buildFinalPromptWithPreset(analysis, preset)
@@ -192,7 +192,7 @@ function buildUserMessage(
     message += `🎨 PRESET STYLE SELECTED - APPLY THIS STYLE:\n`
     message += `- Name: ${preset.name}\n`
     message += `- Description: ${preset.description}\n`
-    
+
     // Handle both old and new preset formats
     if (preset.positive && preset.positive.length > 0) {
       message += `- Positive modifiers (MUST include these): ${preset.positive.join(', ')}\n`
@@ -203,12 +203,12 @@ function buildUserMessage(
     if (preset.deviation !== undefined) {
       message += `- Allowed deviation: ${preset.deviation} (lower = stricter identity preservation)\n`
     }
-    
+
     // Background/Scene
     if (preset.background) {
       message += `- Background/Scene: ${preset.background}\n`
     }
-    
+
     // Camera settings
     if (cameraStyle) {
       message += `- Camera Settings:\n`
@@ -219,7 +219,7 @@ function buildUserMessage(
         message += `  * Depth of Field: ${cameraStyle.depthOfField}\n`
       }
     }
-    
+
     // Lighting settings
     if (preset.lighting) {
       message += `- Lighting Settings:\n`
@@ -229,15 +229,34 @@ function buildUserMessage(
       if (preset.lighting.quality) message += `  * Quality: ${preset.lighting.quality}\n`
       if (preset.lighting.colorTemp) message += `  * Color Temperature: ${preset.lighting.colorTemp}\n`
     }
-    
+
+    // Background Elements (people, objects, atmosphere)
+    if (preset.backgroundElements) {
+      message += `- Scene Elements (IMPORTANT for realism):\n`
+      if (preset.backgroundElements.people) message += `  * People in Background: ${preset.backgroundElements.people}\n`
+      if (preset.backgroundElements.objects) message += `  * Objects/Props: ${preset.backgroundElements.objects}\n`
+      if (preset.backgroundElements.atmosphere) message += `  * Scene Atmosphere: ${preset.backgroundElements.atmosphere}\n`
+    }
+
+    // Pose guidance
+    if (preset.pose) {
+      message += `- Pose Guidance (apply to subject):\n`
+      if (preset.pose.stance) message += `  * Stance: ${preset.pose.stance}\n`
+      if (preset.pose.arms) message += `  * Arms: ${preset.pose.arms}\n`
+      if (preset.pose.expression) message += `  * Expression: ${preset.pose.expression}\n`
+      if (preset.pose.energy) message += `  * Energy: ${preset.pose.energy}\n`
+      if (preset.pose.bodyAngle) message += `  * Body Angle: ${preset.pose.bodyAngle}\n`
+    }
+
     // Note: Legacy instructions field removed for safety (could contain banned verbs)
-    
+
     message += `\n⚠️ CRITICAL PRESET APPLICATION RULES:\n`
-    message += `1. Apply preset ONLY to: background, lighting, camera angle/lens, environment, mood, color grading\n`
-    message += `2. NEVER apply preset to: face, hair, body shape, clothing type/color/pattern, accessories\n`
-    message += `3. Preserve identity EXACTLY - preset only affects scene/lighting/camera, NOT the person\n`
-    message += `4. Use positive modifiers in BACKGROUND and CAMERA sections\n`
-    message += `5. Avoid negative modifiers completely\n\n`
+    message += `1. Apply preset ONLY to: background, lighting, camera angle/lens, environment, mood, color grading, POSE GUIDANCE\n`
+    message += `2. NEVER apply preset to: FACE (must be IDENTICAL to input), hair color, body shape, clothing type/color/pattern\n`
+    message += `3. FACE IDENTITY IS SACRED - never change any facial feature\n`
+    message += `4. Include specified background PEOPLE and OBJECTS for realism\n`
+    message += `5. Apply pose guidance to body position (but keep FACE identical)\n`
+    message += `6. Avoid negative modifiers completely\n\n`
   } else {
     message += `📝 NO PRESET SELECTED - Use default (clothing swap only, preserve original background/lighting)\n\n`
   }
@@ -251,20 +270,33 @@ function buildUserMessage(
   }
 
   message += `Generate a production-level prompt in this EXACT format:\n\n`
-  message += `IDENTITY:\n[Preserve EXACT face structure, hair (length/color/texture), skin tone, body proportions from analysis JSON]\n\n`
-  message += `BODY:\n[Preserve EXACT pose, silhouette, body language from analysis JSON]\n\n`
+  message += `IDENTITY:\n[Preserve EXACT face structure (jawline, cheekbones, eyes, nose, lips - IDENTICAL to input), hair (length/color/texture), skin tone from analysis JSON]\n\n`
+  message += `BODY:\n[Preserve body proportions from analysis JSON. Apply pose guidance from preset if specified.]\n\n`
   message += `CLOTHING:\n[Preserve EXACT garment type, color, pattern, texture from analysis JSON]\n\n`
   if (preset) {
     const backgroundDesc = preset.background || (preset.positive?.join(', ') || 'preset style')
-    const lightingDesc = preset.lighting 
+    const lightingDesc = preset.lighting
       ? `${preset.lighting.type} from ${preset.lighting.source}, ${preset.lighting.quality}, ${preset.lighting.colorTemp}`
       : 'apply preset lighting'
     const cameraDesc = cameraStyle
       ? `${cameraStyle.angle || 'preset'} angle, ${cameraStyle.lens || 'preset'} lens, ${cameraStyle.framing || 'preset'} framing${'depthOfField' in cameraStyle && cameraStyle.depthOfField ? `, ${cameraStyle.depthOfField} depth of field` : ''}`
       : 'preset camera settings'
-    
-    message += `BACKGROUND:\n[Apply preset "${preset.name}": ${backgroundDesc}. Lighting: ${lightingDesc}. Use positive modifiers: ${preset.positive?.join(', ') || 'preset style'}]\n\n`
+
+    // Build scene elements description
+    let sceneElements = ''
+    if (preset.backgroundElements) {
+      if (preset.backgroundElements.people) sceneElements += `People: ${preset.backgroundElements.people}. `
+      if (preset.backgroundElements.objects) sceneElements += `Objects: ${preset.backgroundElements.objects}. `
+      if (preset.backgroundElements.atmosphere) sceneElements += `Atmosphere: ${preset.backgroundElements.atmosphere}. `
+    }
+
+    message += `BACKGROUND:\n[Apply preset "${preset.name}": ${backgroundDesc}. ${sceneElements}Lighting: ${lightingDesc}. Use positive modifiers: ${preset.positive?.join(', ') || 'preset style'}]\n\n`
     message += `CAMERA:\n[Apply preset camera: ${cameraDesc}]\n\n`
+
+    // Add pose if specified
+    if (preset.pose) {
+      message += `POSE:\n[Apply: ${preset.pose.stance}. Arms: ${preset.pose.arms}. Expression: ${preset.pose.expression}. Energy: ${preset.pose.energy}${preset.pose.bodyAngle ? `. Body angle: ${preset.pose.bodyAngle}` : ''}]\n\n`
+    }
   } else {
     message += `BACKGROUND:\n[Keep original background and lighting from analysis JSON - NO changes]\n\n`
     message += `CAMERA:\n[Match original camera settings from analysis JSON - NO changes]\n\n`

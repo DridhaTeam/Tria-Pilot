@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -35,10 +36,13 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
     <div className="space-y-4">
       {/* Main Image */}
       <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
-        <img
+        <Image
           src={images[currentIndex]}
           alt={`Product image ${currentIndex + 1}`}
-          className="w-full h-full object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover"
+          priority={currentIndex === 0}
         />
         {images.length > 1 && (
           <>
@@ -72,16 +76,18 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
             <button
               key={index}
               onClick={() => goToImage(index)}
-              className={`flex-1 aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
-                index === currentIndex
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-700'
-              }`}
+              className={`flex-1 aspect-square rounded-lg overflow-hidden border-2 transition-colors relative ${index === currentIndex
+                ? 'border-primary'
+                : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-700'
+                }`}
             >
-              <img
+              <Image
                 src={image}
                 alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
+                fill
+                sizes="20vw"
+                className="object-cover"
+                loading="lazy"
               />
             </button>
           ))}

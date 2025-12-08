@@ -1,14 +1,38 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Image optimization configuration
   images: {
+    // Enable modern image formats for better compression
+    formats: ['image/avif', 'image/webp'],
+    // Device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    // Image sizes for smaller images like thumbnails
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Remote patterns for external images
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.in',
+      },
     ],
+    // Minimize image size in production
+    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days
   },
+  // Enable gzip compression
+  compress: true,
+  // Remove X-Powered-By header for security
+  poweredByHeader: false,
+  // Enable React strict mode for better development experience
+  reactStrictMode: true,
   // Transpile ESM packages that Next.js can't handle by default
   transpilePackages: [
     '@radix-ui/react-id',

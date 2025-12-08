@@ -33,6 +33,8 @@ function TryOnPageContent() {
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [selectedModel, setSelectedModel] = useState<'flash' | 'pro'>('flash')
+  const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '3:4' | '9:16'>('4:5')
+  const [quality, setQuality] = useState<'1K' | '2K' | '4K'>('2K')
   const [dragOver, setDragOver] = useState<'person' | 'clothing' | null>(null)
   const presets = getAllPresets()
 
@@ -141,6 +143,8 @@ function TryOnPageContent() {
           clothingImage: clothingImageBase64 || clothingImage || undefined,
           model: selectedModel,
           stylePreset: selectedPreset || undefined,
+          aspectRatio,
+          resolution: quality,
         }),
       })
 
@@ -257,10 +261,10 @@ function TryOnPageContent() {
                     onDragLeave={() => setDragOver(null)}
                     onDrop={(e) => handleDrop(e, 'person')}
                     className={`relative border-2 border-dashed rounded-xl transition-all ${dragOver === 'person'
-                        ? 'border-peach bg-peach/5'
-                        : personImage
-                          ? 'border-green-300 bg-green-50'
-                          : 'border-subtle hover:border-charcoal/30'
+                      ? 'border-peach bg-peach/5'
+                      : personImage
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-subtle hover:border-charcoal/30'
                       }`}
                   >
                     {personImage ? (
@@ -305,10 +309,10 @@ function TryOnPageContent() {
                     onDragLeave={() => setDragOver(null)}
                     onDrop={(e) => handleDrop(e, 'clothing')}
                     className={`relative border-2 border-dashed rounded-xl transition-all ${dragOver === 'clothing'
-                        ? 'border-peach bg-peach/5'
-                        : clothingImage
-                          ? 'border-green-300 bg-green-50'
-                          : 'border-subtle hover:border-charcoal/30'
+                      ? 'border-peach bg-peach/5'
+                      : clothingImage
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-subtle hover:border-charcoal/30'
                       }`}
                   >
                     {clothingImage ? (
@@ -362,8 +366,8 @@ function TryOnPageContent() {
                     onClick={() => setSelectedModel(model.id as 'flash' | 'pro')}
                     disabled={loading}
                     className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${selectedModel === model.id
-                        ? 'border-charcoal bg-charcoal text-cream'
-                        : 'border-subtle hover:border-charcoal/30'
+                      ? 'border-charcoal bg-charcoal text-cream'
+                      : 'border-subtle hover:border-charcoal/30'
                       }`}
                   >
                     <p className="font-medium">{model.name}</p>
@@ -402,7 +406,72 @@ function TryOnPageContent() {
               </p>
             </div>
 
-            {/* Generate Button */}
+            {/* Aspect Ratio Selection */}
+            <div className="bg-white rounded-2xl border border-subtle p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-5 h-5 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2" />
+                </svg>
+                <h2 className="text-lg font-semibold text-charcoal">Aspect Ratio</h2>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { id: '1:1', name: 'Square', icon: '□' },
+                  { id: '4:5', name: 'Portrait', icon: '▯' },
+                  { id: '3:4', name: 'Tall', icon: '▮' },
+                  { id: '9:16', name: 'Story', icon: '▯▯' },
+                ].map((ratio) => (
+                  <button
+                    key={ratio.id}
+                    onClick={() => setAspectRatio(ratio.id as '1:1' | '4:5' | '3:4' | '9:16')}
+                    disabled={loading}
+                    className={`p-3 rounded-xl border-2 transition-all text-center ${aspectRatio === ratio.id
+                        ? 'border-charcoal bg-charcoal text-cream'
+                        : 'border-subtle hover:border-charcoal/30'
+                      }`}
+                  >
+                    <span className="text-lg">{ratio.icon}</span>
+                    <p className={`text-xs mt-1 ${aspectRatio === ratio.id ? 'text-cream/70' : 'text-charcoal/60'}`}>
+                      {ratio.name}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quality Selection */}
+            <div className="bg-white rounded-2xl border border-subtle p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-5 h-5 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h2 className="text-lg font-semibold text-charcoal">Quality</h2>
+              </div>
+              <div className="flex gap-3">
+                {[
+                  { id: '1K', name: '1K', desc: 'Fast', disabled: false },
+                  { id: '2K', name: '2K', desc: 'Balanced', disabled: false },
+                  { id: '4K', name: '4K', desc: 'Best', disabled: selectedModel === 'flash' },
+                ].map((q) => (
+                  <button
+                    key={q.id}
+                    onClick={() => !q.disabled && setQuality(q.id as '1K' | '2K' | '4K')}
+                    disabled={loading || q.disabled}
+                    className={`flex-1 p-3 rounded-xl border-2 transition-all text-center ${quality === q.id
+                        ? 'border-charcoal bg-charcoal text-cream'
+                        : q.disabled
+                          ? 'border-subtle/50 text-charcoal/30 cursor-not-allowed'
+                          : 'border-subtle hover:border-charcoal/30'
+                      }`}
+                  >
+                    <p className="font-medium">{q.name}</p>
+                    <p className={`text-xs mt-0.5 ${quality === q.id ? 'text-cream/70' : q.disabled ? 'text-charcoal/30' : 'text-charcoal/60'}`}>
+                      {q.disabled ? 'Pro only' : q.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
             <motion.button
               onClick={handleGenerate}
               disabled={loading || !personImageBase64}

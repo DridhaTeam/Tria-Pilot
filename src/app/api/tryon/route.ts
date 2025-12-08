@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { personImage, clothingImage, model, stylePreset, background, pose, expression, addOns } =
+    const { personImage, clothingImage, model, stylePreset, background, pose, expression, addOns, aspectRatio: reqAspectRatio, resolution: reqResolution } =
       tryOnSchema.parse(body)
 
     // Map user-friendly model names to Gemini model IDs
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
           clothingAnalysis = await analyzeClothingImage(croppedClothing)
           console.log('✅ Clothing analysis complete')
           console.log(`Clothing: ${clothingAnalysis.upper_wear_color} ${clothingAnalysis.upper_wear_type}`)
-          
+
           // Merge clothing analysis into person analysis
           personAnalysis.clothing = clothingAnalysis
         } catch (error) {
@@ -167,19 +167,19 @@ export async function POST(request: Request) {
         )
         console.log('✅ Prompt generated')
         console.log(`Prompt length: ${finalPrompt.length} characters`)
-        
+
         // Validate preset data is included in final prompt
         if (preset) {
           // Check for preset content in the actual prompt format (not section headers)
           // The prompt uses "Scene Style:" and "Avoid:" sections, not "STYLE SECTION"
           const hasSceneStyle = finalPrompt.includes('Scene Style:') || finalPrompt.includes('Scene Style')
           const hasAvoid = finalPrompt.includes('Avoid:') || finalPrompt.includes('Avoid')
-          
+
           // Check if preset name or description is mentioned
           const hasPresetName = finalPrompt.includes(preset.name)
           const hasPresetSection = finalPrompt.includes('PRESET:') || finalPrompt.includes(`PRESET: ${preset.name}`)
           const hasPresetDescription = preset.description ? finalPrompt.includes(preset.description.substring(0, 20)) : false
-          
+
           // Check if specific modifiers are present (if they exist) - this is the most important check
           const hasPositiveMods = preset.positive && preset.positive.length > 0
             ? preset.positive.some((mod: string) => finalPrompt.includes(mod))
@@ -187,20 +187,20 @@ export async function POST(request: Request) {
           const hasNegativeMods = preset.negative && preset.negative.length > 0
             ? preset.negative.some((mod: string) => finalPrompt.includes(mod))
             : true // If no negative mods defined, that's okay
-          
+
           // Check for preset background if specified
           const hasBackground = preset.background ? finalPrompt.includes(preset.background) : true
-          
+
           // Check for lighting if specified
-          const hasLighting = preset.lighting 
+          const hasLighting = preset.lighting
             ? (finalPrompt.includes(preset.lighting.type) || finalPrompt.includes(preset.lighting.source))
             : true
-          
+
           // Check for camera if specified
           const hasCamera = preset.camera_style
             ? (finalPrompt.includes(preset.camera_style.angle) || finalPrompt.includes(preset.camera_style.lens))
             : true
-          
+
           console.log(`🔍 Preset validation in final prompt:`)
           console.log(`   Scene Style Section: ${hasSceneStyle ? '✅' : '❌'}`)
           console.log(`   Avoid Section: ${hasAvoid ? '✅' : '❌'}`)
@@ -211,19 +211,19 @@ export async function POST(request: Request) {
           console.log(`   Background: ${hasBackground ? '✅' : '⚠️'}`)
           console.log(`   Lighting: ${hasLighting ? '✅' : '⚠️'}`)
           console.log(`   Camera: ${hasCamera ? '✅' : '⚠️'}`)
-          
+
           // Critical validation: must have positive modifiers if they exist
           // This is the most important check - the actual preset content must be present
           if (preset.positive && preset.positive.length > 0 && !hasPositiveMods) {
             console.error('⚠️ CRITICAL ERROR: Preset positive modifiers not found in final prompt!')
             throw new Error('Preset data was not properly merged into final prompt - missing positive modifiers')
           }
-          
+
           // Warn if sections are missing but don't fail (these are format checks, not critical)
           if (!hasSceneStyle || !hasAvoid) {
             console.warn('⚠️ WARNING: Prompt format may not match expected structure, but content validation passed')
           }
-          
+
           // Log success if all critical checks pass
           if (hasPositiveMods && hasNegativeMods) {
             console.log('✅ Preset validation passed: All critical preset content is present in final prompt')
@@ -241,11 +241,11 @@ export async function POST(request: Request) {
       console.log('='.repeat(80))
       console.log(`\nPrompt length: ${finalPrompt.length} characters\n`)
 
-      console.log('Step 4/5: Generating image with Gemini...')
-
       // Generate image using Gemini
-      const aspectRatio: '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9' = '4:5'
-      const resolution: '1K' | '2K' | '4K' = '2K'
+      // Use user-selected aspect ratio and resolution (with defaults)
+      const aspectRatio = reqAspectRatio || '4:5'
+      const resolution = reqResolution || '2K'
+      console.log(`📐 Generation settings: ${aspectRatio} aspect ratio, ${resolution} resolution`)
 
       let generatedImage
       try {

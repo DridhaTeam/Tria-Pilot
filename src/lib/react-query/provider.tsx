@@ -19,6 +19,8 @@ export function ReactQueryProvider({ children }: { children: React.ReactNode }) 
             refetchOnWindowFocus: false,
             // Refetch on reconnect
             refetchOnReconnect: true,
+            // Don't refetch on mount if data is fresh (reduces API calls)
+            refetchOnMount: false,
             // Network mode: prefer cache first
             networkMode: 'online',
           },

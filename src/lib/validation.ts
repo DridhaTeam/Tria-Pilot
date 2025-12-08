@@ -21,6 +21,9 @@ export const tryOnSchema = z.object({
   pose: z.string().optional(),
   expression: z.string().optional(),
   addOns: z.array(z.string()).optional(),
+  // New fields for user-configurable quality
+  aspectRatio: z.enum(['1:1', '4:5', '3:4', '9:16']).optional().default('4:5'),
+  resolution: z.enum(['1K', '2K', '4K']).optional().default('2K'),
 })
 
 export const adGenerationSchema = z.object({

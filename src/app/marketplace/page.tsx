@@ -2,6 +2,7 @@ import { createClient } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ShoppingBag, Search, Filter } from 'lucide-react'
 
 export default async function MarketplacePage({
@@ -94,8 +95,8 @@ export default async function MarketplacePage({
                   key={category}
                   href={`/marketplace?category=${categoryValue}`}
                   className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${isActive
-                      ? 'bg-charcoal text-cream'
-                      : 'bg-white border border-subtle text-charcoal/70 hover:border-charcoal/30 hover:text-charcoal'
+                    ? 'bg-charcoal text-cream'
+                    : 'bg-white border border-subtle text-charcoal/70 hover:border-charcoal/30 hover:text-charcoal'
                     }`}
                 >
                   {category}
@@ -125,12 +126,15 @@ export default async function MarketplacePage({
                 <Link key={product.id} href={`/marketplace/${product.id}`}>
                   <div className="group bg-white rounded-2xl border border-subtle overflow-hidden hover:shadow-lg hover:border-charcoal/20 transition-all">
                     {/* Image */}
-                    <div className="aspect-[4/5] bg-cream overflow-hidden">
+                    <div className="aspect-[4/5] bg-cream overflow-hidden relative">
                       {coverImage ? (
-                        <img
+                        <Image
                           src={coverImage}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
