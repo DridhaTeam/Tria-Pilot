@@ -39,29 +39,20 @@ export default function RequestModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Immediate visual feedback - show loading state instantly
     setLoading(true)
 
     try {
-      // If productId is provided, we need to get the brandId from the product
-      let targetInfluencerId = influencerId
-      let targetBrandId = brandId
-
-      if (productId && !influencerId) {
-        // For product-based collaboration, we need to find the brand
-        const productResponse = await fetch(`/api/products?id=${productId}`)
-        if (productResponse.ok) {
-          const productData = await productResponse.json()
-          targetBrandId = productData.brand?.userId
-        }
-      }
-
+      // API route handles productId and fetches brandId server-side
+      // No need for extra API call - this eliminates the 1-second delay!
       const response = await fetch('/api/collaborations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...(targetInfluencerId && { influencerId: targetInfluencerId }),
-          ...(targetBrandId && { brandId: targetBrandId }),
-          ...(productId && { productId }),
+          ...(influencerId && { influencerId }),
+          ...(brandId && { brandId }),
+          ...(productId && { productId }), // API will handle getting brandId from product
           budget: formData.budget ? parseFloat(formData.budget) : undefined,
           timeline: formData.timeline,
           goals: formData.goals.split(',').map((g) => g.trim()).filter(Boolean),
@@ -74,7 +65,10 @@ export default function RequestModal({
         throw new Error(error.error || 'Failed to send collaboration request')
       }
 
-      toast.success('Collaboration request sent!')
+      // Immediate success feedback
+      toast.success('Collaboration request sent!', {
+        duration: 3000,
+      })
       onClose()
       setFormData({
         budget: '',

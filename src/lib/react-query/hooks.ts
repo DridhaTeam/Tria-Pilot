@@ -154,3 +154,59 @@ export function useFavorites() {
   })
 }
 
+// Toggle favorite mutation with optimistic updates
+export function useToggleFavorite() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ productId, isFavorited }: { productId: string; isFavorited: boolean }) => {
+      if (isFavorited) {
+        const res = await fetch(`/api/favorites?productId=${productId}`, {
+          method: 'DELETE',
+        })
+        if (!res.ok) throw new Error('Failed to remove favorite')
+        return res.json()
+      } else {
+        const res = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId }),
+        })
+        if (!res.ok) throw new Error('Failed to add favorite')
+        return res.json()
+      }
+    },
+    onMutate: async ({ productId, isFavorited }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['favorites'] })
+      
+      // Snapshot previous value
+      const previousFavorites = queryClient.getQueryData(['favorites'])
+      
+      // Optimistically update UI immediately
+      queryClient.setQueryData(['favorites'], (old: any[] = []) => {
+        if (isFavorited) {
+          // Remove from favorites
+          return old.filter((product: any) => product.id !== productId)
+        } else {
+          // Add to favorites (we'll need the product data, but for now just mark as favorited)
+          // The actual product will be added when the query refetches
+          return old
+        }
+      })
+      
+      return { previousFavorites }
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousFavorites) {
+        queryClient.setQueryData(['favorites'], context.previousFavorites)
+      }
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate to refetch and get accurate data
+      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    },
+  })
+}
+

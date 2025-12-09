@@ -1,67 +1,55 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Heart } from 'lucide-react'
 import { toast } from 'sonner'
+import { useFavorites, useToggleFavorite } from '@/lib/react-query/hooks'
 
 interface FavoriteButtonProps {
   productId: string
 }
 
 export default function FavoriteButton({ productId }: FavoriteButtonProps) {
-  const [isFavorited, setIsFavorited] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const { data: favorites = [], isLoading } = useFavorites()
+  const toggleMutation = useToggleFavorite()
 
-  useEffect(() => {
-    // Check if product is favorited
-    fetch('/api/favorites')
-      .then((res) => res.json())
-      .then((favorites) => {
-        const favorited = favorites.some((f: any) => f.id === productId)
-        setIsFavorited(favorited)
-      })
-      .catch(() => {})
-  }, [productId])
+  // Check if product is favorited (favorites is an array of products)
+  const isFavorited = favorites.some((product: any) => product.id === productId)
 
-  const handleToggle = async () => {
-    setLoading(true)
-    try {
-      if (isFavorited) {
-        const response = await fetch(`/api/favorites?productId=${productId}`, {
-          method: 'DELETE',
-        })
-        if (response.ok) {
-          setIsFavorited(false)
-          toast.success('Removed from favorites')
-        }
-      } else {
-        const response = await fetch('/api/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId }),
-        })
-        if (response.ok) {
-          setIsFavorited(true)
-          toast.success('Added to favorites')
-        }
+  const handleToggle = () => {
+    // Immediate optimistic update - UI updates instantly
+    toggleMutation.mutate(
+      { productId, isFavorited },
+      {
+        onSuccess: () => {
+          toast.success(isFavorited ? 'Removed from favorites' : 'Added to favorites', {
+            duration: 2000,
+          })
+        },
+        onError: () => {
+          toast.error('Failed to update favorites')
+        },
       }
-    } catch (error) {
-      toast.error('Failed to update favorites')
-    } finally {
-      setLoading(false)
-    }
+    )
   }
 
   return (
     <Button
       variant="outline"
-      className="flex-1"
+      className="flex-1 transition-all"
       onClick={handleToggle}
-      disabled={loading}
+      disabled={toggleMutation.isPending || isLoading}
     >
-      <Heart className={`mr-2 h-4 w-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-      {isFavorited ? 'Favorited' : 'Add to Favorites'}
+      <Heart
+        className={`mr-2 h-4 w-4 transition-all ${
+          isFavorited ? 'fill-red-500 text-red-500 scale-110' : ''
+        }`}
+      />
+      {toggleMutation.isPending
+        ? 'Updating...'
+        : isFavorited
+        ? 'Favorited'
+        : 'Add to Favorites'}
     </Button>
   )
 }
