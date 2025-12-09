@@ -89,7 +89,7 @@ export default async function ProductDetailPage({ params }: any) {
   }
 
   const productImages = product.images.length > 0
-    ? product.images.map(img => img.imagePath)
+    ? product.images.map((img: { id: string; imagePath: string; order: number }) => img.imagePath)
     : product.imagePath
       ? [product.imagePath]
       : []
@@ -181,7 +181,7 @@ export default async function ProductDetailPage({ params }: any) {
               <div className="pt-4">
                 <h2 className="text-sm font-semibold text-charcoal mb-3">Tags</h2>
                 <div className="flex flex-wrap gap-2">
-                  {product.tags.split(',').map((tag, index) => (
+                  {product.tags.split(',').map((tag: string, index: number) => (
                     <span
                       key={index}
                       className="px-3 py-1 text-xs bg-cream rounded-full text-charcoal/70"

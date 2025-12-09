@@ -115,6 +115,7 @@ export async function GET(request: Request) {
         name: true,
         description: true,
         category: true,
+        audience: true,
         brand: {
           select: {
             id: true,
@@ -156,7 +157,7 @@ export async function GET(request: Request) {
           // Same category
           if (p.category === currentProduct.category) return true
           // Same brand
-          if (p.brandId === currentProduct.brandId) return true
+          if (p.brand?.id === currentProduct.brand?.id) return true
           // Similar audience
           if (p.audience === currentProduct.audience) return true
           return false

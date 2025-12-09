@@ -137,7 +137,7 @@ export default async function MarketplacePage({
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => {
+            {products.map((product: any) => {
               const coverImage = product.images[0]?.imagePath || product.imagePath || null
               return (
                 <Link key={product.id} href={`/marketplace/${product.id}`}>
