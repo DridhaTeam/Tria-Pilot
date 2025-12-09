@@ -11,32 +11,41 @@ function createPrismaClient() {
     throw new Error('DATABASE_URL environment variable is not set')
   }
 
-  // Optimized connection pool configuration for Supabase pooler
-  // Supabase pooler typically limits to 5 connections, so we use 4 to be safe
+  // Optimized connection pool configuration for Supabase pooler + Vercel serverless
+  // Serverless functions should use minimal connections (1-2 max)
+  // Supabase pooler limits to 5 connections per project, but with multiple functions
+  // running concurrently, we need to be very conservative
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 4, // Reduced for Supabase pooler (pooler limits to 5, we use 4 for safety)
+    max: 1, // CRITICAL: Use only 1 connection per serverless function instance
     min: 0, // No minimum - connections created on demand (better for serverless)
-    idleTimeoutMillis: 5000, // Faster cleanup (5 seconds) for serverless
-    connectionTimeoutMillis: 3000, // Faster failure detection (3 seconds)
+    idleTimeoutMillis: 2000, // Very fast cleanup (2 seconds) for serverless
+    connectionTimeoutMillis: 2000, // Fast failure detection (2 seconds)
     allowExitOnIdle: true,
-    // Keep connections alive but shorter for serverless
+    // Keep connections alive but very short for serverless
     keepAlive: true,
-    keepAliveInitialDelayMillis: 5000,
+    keepAliveInitialDelayMillis: 2000,
   })
 
-  // Handle pool errors gracefully with retry logic
+  // Handle pool errors gracefully - don't crash on connection errors
+  // In serverless, connections can be terminated abruptly
   pool.on('error', (err) => {
-    console.error('Database pool error:', err)
-    // Don't throw - let Prisma handle reconnection
-    // Log but don't crash the application
+    // Only log fatal errors, ignore connection termination errors
+    if (err.code === 'XX000' || err.message?.includes('DbHandler exited')) {
+      // This is a connection termination - expected in serverless
+      // The pool will automatically create a new connection on next query
+      console.warn('Database connection terminated (serverless cleanup):', err.code)
+    } else {
+      console.error('Database pool error:', err)
+    }
+    // Don't throw - let Prisma handle reconnection automatically
   })
 
-  // Handle connection errors
+  // Handle new connections - set timeouts and pooler mode
   pool.on('connect', (client) => {
     // Set statement timeout to prevent hanging queries
-    client.query('SET statement_timeout = 30000').catch((err) => {
-      console.error('Failed to set statement timeout:', err)
+    client.query('SET statement_timeout = 30000').catch(() => {
+      // Ignore - connection might be closing
     })
     
     // Set connection pooler mode if using Supabase
@@ -45,6 +54,11 @@ function createPrismaClient() {
         // Ignore errors - not critical
       })
     }
+  })
+
+  // Handle connection removal (cleanup)
+  pool.on('remove', () => {
+    // Connection removed from pool - normal in serverless
   })
 
 

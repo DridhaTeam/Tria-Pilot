@@ -21,34 +21,68 @@ export default async function ProductDetailPage({ params }: any) {
     redirect('/login')
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { email: authUser.email! },
-  })
+  // Optimized query - only select needed fields
+  let dbUser
+  try {
+    dbUser = await prisma.user.findUnique({
+      where: { email: authUser.email!.toLowerCase().trim() },
+      select: {
+        id: true,
+        role: true,
+      },
+    })
+  } catch (error) {
+    console.error('Database error fetching user:', error)
+    redirect('/login')
+  }
 
   if (!dbUser || dbUser.role !== 'INFLUENCER') {
     redirect('/')
   }
 
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    include: {
-      brand: {
-        include: {
-          user: {
-            select: {
-              name: true,
-              slug: true,
+  // Optimized query - use select instead of include
+  let product
+  try {
+    product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        price: true,
+        link: true,
+        audience: true,
+        tags: true,
+        imagePath: true, // For backward compatibility
+        brand: {
+          select: {
+            id: true,
+            companyName: true,
+            user: {
+              select: {
+                name: true,
+                slug: true,
+              },
             },
           },
         },
-      },
-      images: {
-        orderBy: {
-          order: 'asc',
+        images: {
+          select: {
+            id: true,
+            imagePath: true,
+            order: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
-  })
+    })
+  } catch (error) {
+    console.error('Database error fetching product:', error)
+    notFound()
+  }
 
   if (!product) {
     notFound()
