@@ -5,9 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ShoppingBag, Upload, Sparkles, Palette, Download, RefreshCw, ArrowRight, X, Check } from 'lucide-react'
+import { ShoppingBag, Upload, Sparkles, Palette, Download, RefreshCw, ArrowRight, X, Check, PartyPopper } from 'lucide-react'
 import { getAllPresets, type TryOnPreset } from '@/lib/prompts/try-on-presets'
 import { useProduct } from '@/lib/react-query/hooks'
+import { GeneratingOverlay } from '@/components/tryon/GeneratingOverlay'
+import { bounceInVariants } from '@/lib/animations'
 
 interface Product {
   id: string
@@ -36,6 +38,7 @@ function TryOnPageContent() {
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '3:4' | '9:16'>('4:5')
   const [quality, setQuality] = useState<'1K' | '2K' | '4K'>('2K')
   const [dragOver, setDragOver] = useState<'person' | 'clothing' | null>(null)
+  const [showCelebration, setShowCelebration] = useState(false)
   const presets = getAllPresets()
 
   const { data: productData, isLoading: productLoading } = useProduct(productId)
@@ -155,7 +158,10 @@ function TryOnPageContent() {
       }
 
       setResult(data)
+      setShowCelebration(true)
       toast.success('Try-on generated successfully!')
+      // Show celebration for 5 seconds to let success video play fully
+      setTimeout(() => setShowCelebration(false), 5000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Generation failed')
     } finally {
@@ -184,6 +190,85 @@ function TryOnPageContent() {
 
   return (
     <div className="min-h-screen bg-cream pt-24">
+      {/* Gamified Generating Overlay */}
+      <GeneratingOverlay isVisible={loading} modelType={selectedModel} />
+
+      {/* Success Celebration Overlay with Mascot Video */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none"
+          >
+            {/* Backdrop blur */}
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+
+            {/* Confetti particles */}
+            {[...Array(30)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-3 h-3 rounded-full"
+                style={{
+                  background: ['#E8796D', '#FFD700', '#4CAF50', '#2196F3', '#9C27B0', '#FF69B4'][i % 6],
+                  left: '50%',
+                  top: '50%',
+                }}
+                initial={{ x: 0, y: 0, scale: 0 }}
+                animate={{
+                  x: (Math.random() - 0.5) * 500,
+                  y: (Math.random() - 0.5) * 500,
+                  scale: [0, 1.2, 0],
+                  rotate: Math.random() * 720,
+                }}
+                transition={{
+                  duration: 2,
+                  delay: i * 0.03,
+                  ease: 'easeOut',
+                }}
+              />
+            ))}
+
+            {/* Mascot Success Video Popup */}
+            <motion.div
+              initial={{ scale: 0, rotate: -10 }}
+              animate={{ scale: [0, 1.1, 1], rotate: 0 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+              className="relative z-10"
+            >
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400/50 to-emerald-500/50 rounded-3xl blur-2xl scale-110" />
+
+              {/* Video container */}
+              <div className="relative w-56 h-56 rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-gradient-to-br from-green-50 to-emerald-50">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: 'center 20%' }}
+                >
+                  <source src="/mascot/success.mp4" type="video/mp4" />
+                </video>
+              </div>
+
+              {/* Success badge */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg whitespace-nowrap"
+              >
+                ✨ Ready!
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -426,8 +511,8 @@ function TryOnPageContent() {
                     onClick={() => setAspectRatio(ratio.id as '1:1' | '4:5' | '3:4' | '9:16')}
                     disabled={loading}
                     className={`p-3 rounded-xl border-2 transition-all text-center ${aspectRatio === ratio.id
-                        ? 'border-charcoal bg-charcoal text-cream'
-                        : 'border-subtle hover:border-charcoal/30'
+                      ? 'border-charcoal bg-charcoal text-cream'
+                      : 'border-subtle hover:border-charcoal/30'
                       }`}
                   >
                     <span className="text-lg">{ratio.icon}</span>
@@ -458,10 +543,10 @@ function TryOnPageContent() {
                     onClick={() => !q.disabled && setQuality(q.id as '1K' | '2K' | '4K')}
                     disabled={loading || q.disabled}
                     className={`flex-1 p-3 rounded-xl border-2 transition-all text-center ${quality === q.id
-                        ? 'border-charcoal bg-charcoal text-cream'
-                        : q.disabled
-                          ? 'border-subtle/50 text-charcoal/30 cursor-not-allowed'
-                          : 'border-subtle hover:border-charcoal/30'
+                      ? 'border-charcoal bg-charcoal text-cream'
+                      : q.disabled
+                        ? 'border-subtle/50 text-charcoal/30 cursor-not-allowed'
+                        : 'border-subtle hover:border-charcoal/30'
                       }`}
                   >
                     <p className="font-medium">{q.name}</p>

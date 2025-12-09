@@ -97,27 +97,54 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     const isPro = model === 'gemini-3-pro-image-preview'
 
     const enhancedPrompt = isPro
-      ? `Character Reference System: The person image is the character's DNA. Generate the same character wearing the clothing.
+      ? `STRICT IDENTITY PRESERVATION - CHARACTER REFERENCE SYSTEM
+
+The person image is the IDENTITY ANCHOR. You MUST copy this person EXACTLY.
+
+⛔ CRITICAL FACIAL HAIR RULE:
+- If the person is CLEAN-SHAVEN → output MUST be CLEAN-SHAVEN (NO beard, NO stubble, NO facial hair)
+- If the person HAS A BEARD → output MUST have the EXACT SAME beard
+- NEVER add facial hair that doesn't exist in the reference
+- NEVER remove facial hair that exists in the reference
+
+⛔ FACE IDENTITY RULES (100% MATCH REQUIRED):
+- Face shape: EXACT same width, length, jawline angle
+- Eyes: EXACT same shape, size, spacing, color
+- Nose: EXACT same shape and size
+- Lips: EXACT same shape and fullness
+- Skin tone: EXACT same color and texture
+- Hair: EXACT same style, color, length
+- Glasses: If present in reference, MUST be in output
 
 CHARACTER DNA (from person image):
-- This is the character reference. Use this exact person's face, body shape, skin tone, hair.
-- Face must be 100% identical to the reference - same face shape, same features, same expression style.
-- If character has glasses, beard, or distinctive features, they MUST appear in the output.
+- This person's face is SACRED - do not modify it
+- Use this exact person's face, body shape, skin tone, hair
+- Face must be 100% identical to the reference
 
 CLOTHING (from clothing image):
-- Dress the character in this exact outfit.
-- Match the exact color, pattern, and style.
+- Dress the character in this exact outfit
+- Match the exact color, pattern, and style
 
 SCENE: ${prompt}
 
-OUTPUT: Same character from reference, wearing the clothing, in the scene. Face 100% same as character reference.`
-      : `Virtual try-on: Show the same person from the reference photo wearing the clothing from the product photo.
+OUTPUT: Same character from reference (EXACT FACE - no modifications to facial hair), wearing the clothing, in the scene.`
+      : `STRICT IDENTITY PRESERVATION - VIRTUAL TRY-ON
+
+⛔ CRITICAL FACIAL HAIR RULE:
+- If the person is CLEAN-SHAVEN → output MUST be CLEAN-SHAVEN (NO beard, NO stubble)
+- If the person HAS A BEARD → output MUST have the EXACT SAME beard
+- NEVER add or remove facial hair
+
+⛔ FACE IDENTITY RULES:
+- Face shape, eyes, nose, lips, skin tone: EXACT MATCH to reference
+- Hair style and color: EXACT MATCH
+- Glasses if present: MUST remain
 
 PERSON: Use the exact face, body, and features from the person reference image. Face 100% same as reference.
 CLOTHING: Put the exact clothing from the product reference onto the person.
 SCENE: ${prompt}
 
-Keep the person's face, hair, glasses, beard exactly as shown in the reference photo. Do not modify the person's appearance.`
+Keep the person's face, hair, glasses, facial hair (or lack thereof) EXACTLY as shown in the reference photo. Do not modify the person's appearance.`
 
     contents.push(enhancedPrompt)
 

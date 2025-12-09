@@ -284,3 +284,176 @@ export const buttonInteraction = {
     whileHover: 'hover',
     whileTap: 'tap',
 }
+
+// ============================================
+// GAMIFIED ANIMATIONS
+// New variants for enhanced UX
+// ============================================
+
+// Sparkle/shine animation
+export const sparkleVariants: Variants = {
+    initial: {
+        scale: 1,
+        rotate: 0,
+    },
+    animate: {
+        scale: [1, 1.2, 1],
+        rotate: [0, 180, 360],
+        transition: {
+            duration: 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+        },
+    },
+}
+
+// Pulse glow animation
+export const pulseGlowVariants: Variants = {
+    initial: {
+        boxShadow: '0 0 0 0 rgba(232, 121, 109, 0)',
+    },
+    animate: {
+        boxShadow: [
+            '0 0 0 0 rgba(232, 121, 109, 0.4)',
+            '0 0 20px 10px rgba(232, 121, 109, 0.2)',
+            '0 0 0 0 rgba(232, 121, 109, 0)',
+        ],
+        transition: {
+            duration: 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+        },
+    },
+}
+
+// Success celebration
+export const celebrationVariants: Variants = {
+    initial: {
+        scale: 0,
+        opacity: 0,
+    },
+    animate: {
+        scale: [0, 1.2, 1],
+        opacity: 1,
+        transition: {
+            duration: 0.5,
+            ease: [0.22, 1, 0.36, 1],
+        },
+    },
+}
+
+// Confetti burst (for success states)
+export const confettiBurst: Variants = {
+    initial: {
+        opacity: 0,
+        scale: 0,
+    },
+    animate: {
+        opacity: [0, 1, 0],
+        scale: [0, 1.5, 2],
+        transition: {
+            duration: 0.8,
+            ease: 'easeOut',
+        },
+    },
+}
+
+// Float animation (gentle hovering effect)
+export const floatVariants: Variants = {
+    initial: {
+        y: 0,
+    },
+    animate: {
+        y: [-5, 5, -5],
+        transition: {
+            duration: 3,
+            repeat: Infinity,
+            ease: 'easeInOut',
+        },
+    },
+}
+
+// Shimmer effect
+export const shimmerVariants: Variants = {
+    initial: {
+        backgroundPosition: '-200% 0',
+    },
+    animate: {
+        backgroundPosition: '200% 0',
+        transition: {
+            duration: 2,
+            repeat: Infinity,
+            ease: 'linear',
+        },
+    },
+}
+
+// Progress step animation
+export const stepVariants: Variants = {
+    inactive: {
+        scale: 1,
+        opacity: 0.5,
+    },
+    active: {
+        scale: 1.05,
+        opacity: 1,
+        transition: {
+            duration: 0.3,
+            ease: 'easeOut',
+        },
+    },
+    complete: {
+        scale: 1,
+        opacity: 1,
+        backgroundColor: 'rgb(34, 197, 94)', // green-500
+    },
+}
+
+// Button click ripple
+export const rippleVariants: Variants = {
+    initial: {
+        scale: 0,
+        opacity: 0.5,
+    },
+    animate: {
+        scale: 4,
+        opacity: 0,
+        transition: {
+            duration: 0.6,
+            ease: 'easeOut',
+        },
+    },
+}
+
+// Image reveal animation
+export const imageRevealVariants: Variants = {
+    initial: {
+        clipPath: 'inset(100% 0 0 0)',
+        opacity: 0,
+    },
+    animate: {
+        clipPath: 'inset(0% 0 0 0)',
+        opacity: 1,
+        transition: {
+            duration: 0.8,
+            ease: [0.22, 1, 0.36, 1],
+        },
+    },
+}
+
+// Bounce in animation
+export const bounceInVariants: Variants = {
+    initial: {
+        scale: 0,
+        opacity: 0,
+    },
+    animate: {
+        scale: [0, 1.1, 0.95, 1],
+        opacity: 1,
+        transition: {
+            duration: 0.5,
+            times: [0, 0.6, 0.8, 1],
+        },
+    },
+}
+
