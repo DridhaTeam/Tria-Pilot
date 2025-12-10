@@ -185,7 +185,7 @@ ${prompt}
  If style prompts differ from the face in Image 1, IGNORE style.
  IDENTITY IS KING.
  
- OUTPUT: The SAME PERSON from Image 1, wearing the new clothes. ONLY ONE PERSON. NO second person from clothing image.`)
+ OUTPUT: The SAME PERSON from Image 1 wearing the new clothes. ONLY ONE PERSON. NO second person from clothing image.`)
 
     contents.push(enhancedPrompt)
 
