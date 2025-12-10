@@ -27,13 +27,16 @@ function TryOnPageContent() {
 
   const [personImage, setPersonImage] = useState<string>('')
   const [personImageBase64, setPersonImageBase64] = useState<string>('')
+  const [additionalPersonImages, setAdditionalPersonImages] = useState<string[]>([]) // For Pro model
+  const [additionalPersonImagesBase64, setAdditionalPersonImagesBase64] = useState<string[]>([]) // For Pro model
   const [clothingImage, setClothingImage] = useState<string>('')
   const [clothingImageBase64, setClothingImageBase64] = useState<string>('')
   const [loading, setLoading] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState<'person' | 'clothing' | null>(null)
+  const [uploadingImage, setUploadingImage] = useState<'person' | 'clothing' | 'additional' | null>(null)
   const [result, setResult] = useState<{ jobId: string; imageUrl: string } | null>(null)
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
+  const [presetCategory, setPresetCategory] = useState<string>('all')
   const [selectedModel, setSelectedModel] = useState<'flash' | 'pro'>('flash')
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '3:4' | '9:16'>('4:5')
   const [quality, setQuality] = useState<'1K' | '2K' | '4K'>('2K')
@@ -118,6 +121,41 @@ function TryOnPageContent() {
     reader.readAsDataURL(file)
   }, [])
 
+  // Handler for additional person images (Pro model)
+  const handleAdditionalImageUpload = useCallback((file: File) => {
+    if (additionalPersonImages.length >= 4) {
+      toast.error('Maximum 4 additional images allowed (5 total)')
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+
+    setUploadingImage('additional')
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string
+      if (base64 && base64.length >= 100) {
+        setAdditionalPersonImages(prev => [...prev, base64])
+        setAdditionalPersonImagesBase64(prev => [...prev, base64])
+        toast.success(`Additional photo ${additionalPersonImages.length + 1} added`)
+      }
+      setUploadingImage(null)
+    }
+    reader.onerror = () => {
+      toast.error('Failed to read image file')
+      setUploadingImage(null)
+    }
+    reader.readAsDataURL(file)
+  }, [additionalPersonImages.length])
+
+  const handleRemoveAdditionalImage = (index: number) => {
+    setAdditionalPersonImages(prev => prev.filter((_, i) => i !== index))
+    setAdditionalPersonImagesBase64(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleDrop = useCallback((e: React.DragEvent, type: 'person' | 'clothing') => {
     e.preventDefault()
     setDragOver(null)
@@ -143,6 +181,7 @@ function TryOnPageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           personImage: personImageBase64 || personImage,
+          personImages: selectedModel === 'pro' ? additionalPersonImagesBase64 : undefined, // Pro model multi-image
           clothingImage: clothingImageBase64 || clothingImage || undefined,
           model: selectedModel,
           stylePreset: selectedPreset || undefined,
@@ -152,11 +191,13 @@ function TryOnPageContent() {
       })
 
       const data = await response.json()
+      console.log('API Response:', data) // Debug: see what we got back
 
       if (!response.ok) {
         throw new Error(data.error || 'Generation failed')
       }
 
+      console.log('Setting result with imageUrl:', data.imageUrl) // Debug
       setResult(data)
       setShowCelebration(true)
       toast.success('Try-on generated successfully!')
@@ -271,21 +312,21 @@ function TryOnPageContent() {
 
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-4xl font-serif text-charcoal mb-2">
+            <h1 className="text-3xl sm:text-4xl font-serif text-charcoal mb-1 sm:mb-2">
               Virtual Try-On <span className="italic">Studio</span>
             </h1>
-            <p className="text-charcoal/60">
+            <p className="text-charcoal/60 text-sm sm:text-base">
               Upload your photo and see how products look on you with AI
             </p>
           </div>
           <Link
             href="/marketplace"
-            className="inline-flex items-center gap-2 px-5 py-2.5 border border-charcoal/20 text-charcoal rounded-full hover:bg-charcoal/5 transition-colors"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-charcoal/20 text-charcoal rounded-full hover:bg-charcoal/5 transition-colors text-sm"
           >
             <ShoppingBag className="w-4 h-4" />
-            Browse Products
+            <span className="hidden sm:inline">Browse</span> Products
           </Link>
         </div>
 
@@ -384,6 +425,60 @@ function TryOnPageContent() {
                   </div>
                 </div>
 
+                {/* Additional Photos for Pro Model */}
+                {selectedModel === 'pro' && personImage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-4"
+                  >
+                    <label className="block text-sm font-medium text-charcoal mb-2">
+                      Additional Photos <span className="text-charcoal/50 font-normal">(Pro: Better face accuracy)</span>
+                    </label>
+                    <p className="text-xs text-charcoal/50 mb-3">
+                      Add up to 4 more photos of the same person from different angles for better identity preservation
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {/* Show existing additional images */}
+                      {additionalPersonImages.map((img, index) => (
+                        <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-green-300">
+                          <img src={img} alt={`Additional ${index + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            onClick={() => handleRemoveAdditionalImage(index)}
+                            className="absolute top-0.5 right-0.5 p-0.5 bg-white/90 rounded-full hover:bg-white"
+                          >
+                            <X className="w-3 h-3 text-charcoal" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Add more button */}
+                      {additionalPersonImages.length < 4 && (
+                        <label className="w-16 h-16 rounded-lg border-2 border-dashed border-charcoal/20 flex flex-col items-center justify-center cursor-pointer hover:border-peach transition-colors">
+                          <span className="text-xl text-charcoal/30">+</span>
+                          <span className="text-[10px] text-charcoal/40">{additionalPersonImages.length}/4</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleAdditionalImageUpload(file)
+                            }}
+                            className="hidden"
+                            disabled={loading || uploadingImage === 'additional'}
+                          />
+                        </label>
+                      )}
+                    </div>
+                    {additionalPersonImages.length > 0 && (
+                      <p className="text-xs text-green-600 mt-2">
+                        ✓ {additionalPersonImages.length + 1} total reference images for character DNA
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+
                 {/* Clothing Upload */}
                 <div>
                   <label className="block text-sm font-medium text-charcoal mb-2">
@@ -464,31 +559,81 @@ function TryOnPageContent() {
               </div>
             </div>
 
-            {/* Style Preset */}
+            {/* Style Preset - Visual Grid Selector */}
             <div className="bg-white rounded-2xl border border-subtle p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Palette className="w-5 h-5 text-charcoal" />
-                <h2 className="text-lg font-semibold text-charcoal">Style Preset</h2>
-                <span className="text-xs text-charcoal/50">(Optional)</span>
+                <h2 className="text-lg font-semibold text-charcoal">Scene Preset</h2>
+                <span className="text-xs text-charcoal/50">(Choose background & style)</span>
               </div>
-              <select
-                value={selectedPreset}
-                onChange={(e) => setSelectedPreset(e.target.value)}
-                disabled={loading}
-                className="w-full px-4 py-3 rounded-xl border border-subtle bg-cream text-charcoal focus:outline-none focus:ring-2 focus:ring-peach/50 transition-all"
-              >
-                <option value="">None (Default - Clothing Only)</option>
-                {presets.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.name} - {preset.description}
-                  </option>
+
+              {/* Category Tabs */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'best', label: '⭐ Best' },
+                  { id: 'indian', label: '🇮🇳 Indian' },
+                  { id: 'travel', label: '✈️ Travel' },
+                  { id: 'lifestyle', label: '🏠 Lifestyle' },
+                  { id: 'editorial', label: '📸 Editorial' },
+                  { id: 'street', label: '🏙️ Street' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setPresetCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${presetCategory === cat.id
+                      ? 'bg-charcoal text-cream'
+                      : 'bg-cream text-charcoal/70 hover:bg-charcoal/10'
+                      }`}
+                  >
+                    {cat.label}
+                  </button>
                 ))}
-              </select>
-              <p className="text-xs text-charcoal/50 mt-2">
-                {selectedPreset
-                  ? presets.find((p) => p.id === selectedPreset)?.description
-                  : 'No preset: Only clothing changes, background preserved'}
-              </p>
+              </div>
+
+              {/* Preset Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                {/* None option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPreset('')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPreset === ''
+                    ? 'border-charcoal bg-charcoal/5'
+                    : 'border-subtle hover:border-charcoal/30'
+                    }`}
+                >
+                  <p className="text-sm font-medium text-charcoal">None</p>
+                  <p className="text-xs text-charcoal/50 mt-0.5">Clothing only</p>
+                </button>
+
+                {/* Filter presets by category */}
+                {presets
+                  .filter((p) => presetCategory === 'all' || p.category === presetCategory)
+                  .map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setSelectedPreset(preset.id)}
+                      disabled={loading}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPreset === preset.id
+                        ? 'border-charcoal bg-charcoal/5'
+                        : 'border-subtle hover:border-charcoal/30'
+                        }`}
+                    >
+                      <p className="text-sm font-medium text-charcoal truncate">{preset.name}</p>
+                      <p className="text-xs text-charcoal/50 mt-0.5 line-clamp-2">{preset.description}</p>
+                    </button>
+                  ))}
+              </div>
+
+              {selectedPreset && (
+                <div className="mt-3 p-3 bg-cream rounded-xl">
+                  <p className="text-xs text-charcoal/70">
+                    <span className="font-medium">Selected:</span> {presets.find((p) => p.id === selectedPreset)?.name}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Aspect Ratio Selection */}
@@ -499,7 +644,7 @@ function TryOnPageContent() {
                 </svg>
                 <h2 className="text-lg font-semibold text-charcoal">Aspect Ratio</h2>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { id: '1:1', name: 'Square', icon: '□' },
                   { id: '4:5', name: 'Portrait', icon: '▯' },

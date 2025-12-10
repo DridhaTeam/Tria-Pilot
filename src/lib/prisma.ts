@@ -47,7 +47,7 @@ function createPrismaClient() {
     client.query('SET statement_timeout = 30000').catch(() => {
       // Ignore - connection might be closing
     })
-    
+
     // Set connection pooler mode if using Supabase
     if (process.env.DATABASE_URL?.includes('pgbouncer=true')) {
       client.query('SET application_name = "tria-app"').catch(() => {

@@ -6,9 +6,11 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Sparkles, ArrowRight } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function LoginPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,7 +22,7 @@ export default function LoginPage() {
     try {
       // Normalize email on client side too
       const normalizedEmail = email.trim().toLowerCase()
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,6 +34,9 @@ export default function LoginPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Login failed')
       }
+
+      // Invalidate and refetch user data immediately
+      await queryClient.invalidateQueries({ queryKey: ['user'] })
 
       toast.success('Welcome back! 🎉')
       router.push('/dashboard')
@@ -46,6 +51,7 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="min-h-screen flex bg-cream">

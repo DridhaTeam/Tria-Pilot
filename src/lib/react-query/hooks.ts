@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
-// User data hook - optimized for performance
+// User data hook - optimized for auth-aware navigation
 export function useUser() {
   return useQuery({
     queryKey: ['user'],
@@ -21,14 +21,15 @@ export function useUser() {
       const data = await res.json()
       return data.user || null
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes (user data doesn't change often)
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds (for navigation)
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     retry: false, // Don't retry on 401 errors
-    refetchOnMount: false, // Don't refetch if data is fresh (reduces API calls)
-    refetchOnWindowFocus: false, // Don't refetch on focus (reduces unnecessary calls)
-    refetchOnReconnect: true, // Only refetch when network reconnects
+    refetchOnMount: true, // Always refetch on component mount to get fresh auth state
+    refetchOnWindowFocus: true, // Refetch when window regains focus (user may have logged in)
+    refetchOnReconnect: true, // Refetch when network reconnects
   })
 }
+
 
 // Notifications hook
 export function useNotifications() {
@@ -157,7 +158,7 @@ export function useFavorites() {
 // Toggle favorite mutation with optimistic updates
 export function useToggleFavorite() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async ({ productId, isFavorited }: { productId: string; isFavorited: boolean }) => {
       if (isFavorited) {
@@ -179,10 +180,10 @@ export function useToggleFavorite() {
     onMutate: async ({ productId, isFavorited }) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: ['favorites'] })
-      
+
       // Snapshot previous value
       const previousFavorites = queryClient.getQueryData(['favorites'])
-      
+
       // Optimistically update UI immediately
       queryClient.setQueryData(['favorites'], (old: any[] = []) => {
         if (isFavorited) {
@@ -194,7 +195,7 @@ export function useToggleFavorite() {
           return old
         }
       })
-      
+
       return { previousFavorites }
     },
     onError: (err, variables, context) => {
@@ -210,3 +211,23 @@ export function useToggleFavorite() {
   })
 }
 
+// Generations hook - fetch all user's try-on generations
+export function useGenerations() {
+  return useQuery({
+    queryKey: ['generations'],
+    queryFn: async () => {
+      const res = await fetch('/api/generations', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+      if (!res.ok) {
+        if (res.status === 401) return []
+        throw new Error('Failed to fetch generations')
+      }
+      const data = await res.json()
+      return data.generations || []
+    },
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+  })
+}

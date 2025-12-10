@@ -148,22 +148,23 @@ export default async function ProductDetailPage({ params }: any) {
                 brandName={product.brand.user?.name || 'Brand'}
               />
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 {product.link && (
                   <a
                     href={product.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-3 border border-charcoal/20 text-charcoal rounded-full flex items-center justify-center gap-2 hover:bg-charcoal/5 transition-colors"
+                    className="flex-1 min-w-[140px] py-3 border border-charcoal/20 text-charcoal rounded-full flex items-center justify-center gap-2 hover:bg-charcoal/5 transition-colors text-sm"
                   >
-                    <ExternalLink className="w-4 h-4" />
-                    View Original Product
+                    <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">View Original</span>
+                    <span className="sm:hidden">Product</span>
                   </a>
                 )}
                 <FavoriteButton productId={product.id} />
-                <button className="py-3 px-6 border border-charcoal/20 text-charcoal rounded-full flex items-center gap-2 hover:bg-charcoal/5 transition-colors">
+                <button className="py-3 px-4 sm:px-6 border border-charcoal/20 text-charcoal rounded-full flex items-center gap-2 hover:bg-charcoal/5 transition-colors">
                   <Share2 className="w-4 h-4" />
-                  Share
+                  <span className="hidden sm:inline">Share</span>
                 </button>
               </div>
             </div>

@@ -158,7 +158,7 @@ export function GeneratingOverlay({ isVisible, modelType, isComplete = false }: 
                                         <div className="absolute inset-0 bg-gradient-to-br from-peach/40 to-rose/40 rounded-3xl blur-2xl scale-110" />
 
                                         {/* Video player - with background to prevent white flash */}
-                                        <div className="relative w-72 h-72 rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-gradient-to-br from-peach/30 to-rose/30">
+                                        <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-gradient-to-br from-peach/30 to-rose/30">
                                             <video
                                                 key={currentVideo}
                                                 ref={videoRef}

@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { personImage, clothingImage, model, stylePreset, background, pose, expression, addOns, aspectRatio: reqAspectRatio, resolution: reqResolution } =
+    const { personImage, personImages, clothingImage, model, stylePreset, background, pose, expression, addOns, aspectRatio: reqAspectRatio, resolution: reqResolution } =
       tryOnSchema.parse(body)
 
     // Map user-friendly model names to Gemini model IDs
@@ -251,6 +251,7 @@ export async function POST(request: Request) {
       try {
         generatedImage = await generateTryOn({
           personImage: normalizedPerson,
+          personImages: personImages?.map(img => normalizeBase64(img)), // Additional person images for Pro
           clothingImage: normalizedClothing,
           prompt: finalPrompt,
           model: geminiModel as 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview',

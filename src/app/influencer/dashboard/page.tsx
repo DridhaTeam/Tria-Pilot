@@ -148,8 +148,8 @@ export default async function InfluencerDashboard() {
                   key={action.href}
                   href={action.href}
                   className={`group relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] ${action.primary
-                      ? 'bg-gradient-to-br ' + action.color + ' text-charcoal'
-                      : 'bg-white border border-subtle text-charcoal hover:border-charcoal/20'
+                    ? 'bg-gradient-to-br ' + action.color + ' text-charcoal'
+                    : 'bg-white border border-subtle text-charcoal hover:border-charcoal/20'
                     }`}
                 >
                   <div className={`w-12 h-12 rounded-xl ${action.primary ? 'bg-white/30' : 'bg-cream'} flex items-center justify-center mb-4`}>
@@ -171,7 +171,7 @@ export default async function InfluencerDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-serif text-charcoal">Recent Generations</h2>
             <Link
-              href="/influencer/try-on"
+              href="/influencer/generations"
               className="text-sm text-charcoal/60 hover:text-charcoal flex items-center gap-1 transition-colors"
             >
               View all <ArrowRight className="w-4 h-4" />

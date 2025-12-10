@@ -1,28 +1,37 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useSpring } from "framer-motion";
+import { Heart, Shield, Zap, Sparkles } from "lucide-react";
 
 const values = [
     {
-        title: "Kindness",
+        title: "Identity",
+        icon: Heart,
         description:
-            "We believe in technology that amplifies our humanity. Kindness is not just a value; it's the lens through which we build every interaction, ensuring our AI serves with empathy and understanding.",
+            "Your face, your style, your identity. Our AI preserves every unique detail that makes you, you. We never alter or modify your appearance beyond clothing visualization.",
+        color: "from-peach to-rose",
     },
     {
-        title: "Trust",
+        title: "Privacy",
+        icon: Shield,
         description:
-            "Trust is earned through transparency and consistency. We build systems that are reliable, secure, and explainable, so you can confidently integrate AI into your daily life.",
+            "Your photos are processed securely and never stored. We believe in privacy-first AI that respects your data and gives you complete control over your content.",
+        color: "from-cyan-400 to-blue-500",
     },
     {
-        title: "Quality",
+        title: "Speed",
+        icon: Zap,
         description:
-            "Excellence is our baseline. We strive for precision in every algorithm and elegance in every interface, delivering experiences that feel polished, professional, and profound.",
+            "Instant results powered by cutting-edge AI. Our Flash model delivers try-on results in seconds, while Pro model provides studio-quality outputs when you need the best.",
+        color: "from-amber-400 to-orange-500",
     },
     {
-        title: "Simplicity",
+        title: "Magic",
+        icon: Sparkles,
         description:
-            "Complexity should be hidden, not imposed. Our goal is to make advanced intelligence feel intuitive and effortless, removing barriers between you and your potential.",
+            "Powered by Gemini AI, we create photorealistic visualizations that feel like real photography. See exactly how clothes will look on you before you buy.",
+        color: "from-purple-400 to-pink-500",
     },
 ];
 
@@ -34,9 +43,8 @@ export default function ValuesScroll() {
         offset: ["start start", "end end"],
     });
 
-    const smoothProgress = useSpring(scrollYProgress, { damping: 20, stiffness: 100 });
+    useSpring(scrollYProgress, { damping: 20, stiffness: 100 });
 
-    // Update active value based on scroll
     useEffect(() => {
         const unsubscribe = scrollYProgress.on("change", (latest) => {
             const index = Math.min(
@@ -51,75 +59,104 @@ export default function ValuesScroll() {
     return (
         <section ref={containerRef} className="relative h-[300vh] bg-cream">
             <div className="sticky top-0 h-screen flex items-center overflow-hidden">
-                <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 w-full h-full items-center">
+                {/* Background decoration */}
+                <div className="absolute inset-0 -z-10">
+                    <motion.div
+                        className={`absolute top-1/2 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-30 bg-gradient-to-br ${values[activeValue].color}`}
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 5, repeat: Infinity }}
+                    />
+                </div>
 
-                    {/* Left Column: Sticky List */}
+                <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 w-full h-full items-center">
+                    {/* Left Column: Values List */}
                     <div className="relative flex flex-col justify-center h-full">
-                        <div className="space-y-8 relative z-10">
-                            {values.map((value, index) => (
-                                <motion.div
-                                    key={index}
-                                    animate={{
-                                        opacity: activeValue === index ? 1 : 0.3,
-                                        x: activeValue === index ? 20 : 0,
-                                    }}
-                                    transition={{ duration: 0.5 }}
-                                    className="cursor-pointer"
-                                    onClick={() => {
-                                        // Scroll to section logic could go here
-                                    }}
-                                >
-                                    <h3 className="text-4xl md:text-6xl font-serif text-charcoal">
-                                        {value.title}
-                                    </h3>
-                                </motion.div>
-                            ))}
-                        </div>
-
-                        {/* SVG Connector (Simplified for demo) */}
-                        <svg className="absolute top-0 right-0 h-full w-24 pointer-events-none hidden md:block" style={{ right: "-3rem" }}>
-                            <motion.path
-                                d="M 0,50 C 50,50 50,50 100,50"
-                                // This would need complex calculation to match active item position
-                                // For now, we'll use a simple indicator line
-                                className="stroke-peach stroke-[3px] fill-none"
-                            />
-                        </svg>
                         <motion.div
-                            className="absolute left-0 w-1 bg-peach rounded-full"
-                            style={{
-                                top: `calc(50% - 100px + ${activeValue * 80}px)`, // Approximate position
-                                height: 60,
-                            }}
-                            layoutId="activeIndicator"
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        />
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="mb-8"
+                        >
+                            <span className="text-sm font-medium text-peach uppercase tracking-wider">Our Values</span>
+                            <h2 className="text-3xl md:text-4xl font-serif mt-2 text-charcoal">
+                                What We <span className="italic">Stand For</span>
+                            </h2>
+                        </motion.div>
 
-                    </div>
+                        <div className="space-y-6 relative z-10">
+                            {values.map((value, index) => {
+                                const Icon = value.icon;
+                                return (
+                                    <motion.div
+                                        key={index}
+                                        animate={{
+                                            opacity: activeValue === index ? 1 : 0.4,
+                                            x: activeValue === index ? 12 : 0,
+                                            scale: activeValue === index ? 1 : 0.98,
+                                        }}
+                                        transition={{ duration: 0.4, ease: "easeOut" }}
+                                        className="cursor-pointer flex items-center gap-4"
+                                    >
+                                        <motion.div
+                                            className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${activeValue === index
+                                                    ? `bg-gradient-to-br ${value.color} text-white shadow-lg`
+                                                    : "bg-charcoal/5 text-charcoal/40"
+                                                }`}
+                                        >
+                                            <Icon className="w-6 h-6" />
+                                        </motion.div>
+                                        <h3 className="text-3xl md:text-5xl font-serif text-charcoal">
+                                            {value.title}
+                                        </h3>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
 
-                    {/* Right Column: Content */}
-                    <div className="relative h-full flex items-center">
-                        <div className="relative w-full h-64 overflow-hidden">
-                            {values.map((value, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, y: 50 }}
-                                    animate={{
-                                        opacity: activeValue === index ? 1 : 0,
-                                        y: activeValue === index ? 0 : 50,
-                                        pointerEvents: activeValue === index ? "auto" : "none"
-                                    }}
-                                    transition={{ duration: 0.5 }}
-                                    className="absolute inset-0 flex items-center"
-                                >
-                                    <p className="text-xl md:text-2xl text-charcoal/80 font-sans leading-relaxed">
-                                        {value.description}
-                                    </p>
-                                </motion.div>
-                            ))}
+                        {/* Progress indicator */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-48 bg-charcoal/10 rounded-full hidden lg:block">
+                            <motion.div
+                                className="w-full bg-gradient-to-b from-peach to-rose rounded-full"
+                                style={{ height: `${((activeValue + 1) / values.length) * 100}%` }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            />
                         </div>
                     </div>
 
+                    {/* Right Column: Description Card */}
+                    <div className="relative h-full flex items-center">
+                        <div className="w-full">
+                            {values.map((value, index) => {
+                                const Icon = value.icon;
+                                return (
+                                    <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                                        animate={{
+                                            opacity: activeValue === index ? 1 : 0,
+                                            y: activeValue === index ? 0 : 40,
+                                            scale: activeValue === index ? 1 : 0.95,
+                                            pointerEvents: activeValue === index ? "auto" : "none",
+                                        }}
+                                        transition={{ duration: 0.5, ease: "easeOut" }}
+                                        className="absolute inset-0 flex items-center"
+                                    >
+                                        <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-8 md:p-12 shadow-xl border border-charcoal/5">
+                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${value.color} flex items-center justify-center mb-6 shadow-lg`}>
+                                                <Icon className="w-8 h-8 text-white" />
+                                            </div>
+                                            <h4 className="text-2xl md:text-3xl font-serif text-charcoal mb-4">
+                                                {value.title}
+                                            </h4>
+                                            <p className="text-lg md:text-xl text-charcoal/70 leading-relaxed">
+                                                {value.description}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

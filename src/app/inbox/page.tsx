@@ -114,28 +114,28 @@ export default function InboxPage() {
     <div className="min-h-screen bg-cream pt-24">
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-4xl font-serif text-charcoal mb-2">
+            <h1 className="text-3xl sm:text-4xl font-serif text-charcoal mb-1 sm:mb-2">
               <span className="italic">Inbox</span>
             </h1>
-            <p className="text-charcoal/60">
-              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up! 🎉'}
+            <p className="text-charcoal/60 text-sm sm:text-base">
+              {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
             </p>
           </div>
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="px-5 py-2.5 border border-charcoal/20 text-charcoal rounded-full flex items-center gap-2 hover:bg-charcoal/5 transition-colors text-sm"
+              className="self-start sm:self-auto px-4 py-2 border border-charcoal/20 text-charcoal rounded-full flex items-center gap-2 hover:bg-charcoal/5 transition-colors text-sm"
             >
               <CheckCircle2 className="h-4 w-4" />
-              Mark All Read
+              <span className="hidden sm:inline">Mark All</span> Read
             </button>
           )}
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-8">
+        <div className="flex flex-wrap gap-2 mb-6 sm:mb-8">
           {[
             { id: 'all', label: 'All', count: notifications.length },
             { id: 'unread', label: 'Unread', count: unreadCount },
@@ -144,9 +144,9 @@ export default function InboxPage() {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id as any)}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${filter === tab.id
-                  ? 'bg-charcoal text-cream'
-                  : 'bg-white border border-subtle text-charcoal/70 hover:border-charcoal/30'
+              className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all ${filter === tab.id
+                ? 'bg-charcoal text-cream'
+                : 'bg-white border border-subtle text-charcoal/70 hover:border-charcoal/30'
                 }`}
             >
               {tab.label} ({tab.count})
@@ -186,8 +186,8 @@ export default function InboxPage() {
                   transition={{ delay: index * 0.05 }}
                   onClick={() => handleNotificationClick(notification)}
                   className={`bg-white rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] ${!notification.isRead
-                      ? 'border-l-4 border-l-peach border-t-subtle border-r-subtle border-b-subtle bg-peach/5'
-                      : 'border-subtle'
+                    ? 'border-l-4 border-l-peach border-t-subtle border-r-subtle border-b-subtle bg-peach/5'
+                    : 'border-subtle'
                     }`}
                 >
                   <div className="flex items-start gap-4">

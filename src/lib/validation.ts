@@ -14,6 +14,7 @@ export const loginSchema = z.object({
 
 export const tryOnSchema = z.object({
   personImage: z.string(),
+  personImages: z.array(z.string()).optional(), // Additional person images for Pro model
   clothingImage: z.string().optional(),
   model: z.enum(['flash', 'pro']).optional().default('flash'),
   stylePreset: z.string().optional(),
