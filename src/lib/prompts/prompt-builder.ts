@@ -436,8 +436,8 @@ export function buildTryOnPrompt(
   prompt += 'IDENTITY PRESERVATION (ABSOLUTE PRIORITY - PRESET CANNOT OVERRIDE):\n'
   prompt += 'The reference person\'s authentic skin texture reveals subtle pores, faint natural shadows, and genuine imperfections—the lived-in quality of actual human skin. Same apparent age preserved in every detail: the specific way skin creases, the precise facial hair density (or complete absence if clean-shaven), glasses if present. CRITICAL: Preserve gender expression EXACTLY - if the person is female/woman, the output MUST be female/woman with correct body proportions, curves, and feminine characteristics. If the person is male/man, the output MUST be male/man with masculine structure. Same body proportions with natural hand anatomy (5 fingers each). Zero beautification, zero de-aging, zero gender alteration. PRESET STYLING CANNOT CHANGE ANY OF THIS - IDENTITY IS UNCHANGEABLE.\n\n'
 
-  prompt += 'CLOTHING:\n'
-  prompt += 'The garment drapes naturally over their frame—visible fabric weave, realistic creases where fabric bends, subtle shadows where cloth meets skin.\n\n'
+  prompt += 'CLOTHING (COMPLETE REPLACEMENT - NOT OVERLAY):\n'
+  prompt += 'REPLACE the ENTIRE garment from the person image with the EXACT garment from clothing reference. The garment drapes naturally over their frame—visible fabric weave, realistic creases where fabric bends, subtle shadows where cloth meets skin. CRITICAL: If clothing reference is SLEEVELESS (tank top, sleeveless top, etc.), the output MUST be sleeveless - show full arms, shoulders, and armpits. If reference has sleeves, match exact sleeve length. This is COMPLETE GARMENT REPLACEMENT, not overlay or blending.\n\n'
 
   if (!presetUsed) {
     prompt += 'BACKGROUND: The original environment preserved exactly as captured.\n\n'

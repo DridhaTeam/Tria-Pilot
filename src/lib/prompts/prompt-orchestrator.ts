@@ -33,9 +33,12 @@ PRESERVE IDENTITY (Zero Deviation):
 PRESERVE CLOTHING (Exact Match):
 - Garment type: T-shirt stays T-shirt, kurta stays kurta - NO CATEGORY CHANGES
 - Color, texture, pattern - EXACT MATCH
+- Sleeve length: EXACT MATCH - if reference is sleeveless, output MUST be sleeveless (show full arms/shoulders)
+- Neckline: EXACT MATCH - match the exact neckline shape from reference
 - Accessories: ONLY if they exist in input image - NEVER ADD
 - Never add: chains, jackets, glasses, earrings, new patterns
 - CRITICAL: Clothing reference image is for GARMENT EXTRACTION ONLY - COMPLETELY IGNORE any face, person, or identity in clothing image
+- CRITICAL: COMPLETE GARMENT REPLACEMENT - replace entire garment, not overlay. If reference is sleeveless, remove all sleeves completely.
 - ONLY ONE PERSON in output - the person from person image. NO second person from clothing image
 
 PRESERVE BODY LANGUAGE:
@@ -294,7 +297,7 @@ function buildUserMessage(
   message += `⚠️ PRIORITY ORDER (NON-NEGOTIABLE):\n1. IDENTITY (highest priority - NEVER override)\n2. CLOTHING (second priority - preserve exactly)\n3. PRESET STYLING (lowest priority - only if it doesn't conflict with identity/clothing)\n\n`
   message += `IDENTITY:\n[Preserve EXACT face structure (jawline, cheekbones, eyes, nose, lips - IDENTICAL to input), hair (length/color/texture), skin tone from analysis JSON. CRITICAL: Preserve gender_expression EXACTLY - if person is female/woman, output MUST be female/woman with correct body proportions, curves, and characteristics. If person is male/man, output MUST be male/man. NEVER alter gender characteristics. PRESET CANNOT CHANGE THIS - IDENTITY IS ABSOLUTE.]\n\n`
   message += `BODY:\n[Preserve body proportions from analysis JSON EXACTLY. If gender_expression is female/woman: preserve natural curves, hip-to-waist ratio, breast shape, and feminine body characteristics. If gender_expression is male/man: preserve masculine body structure, shoulder width, and male proportions. Apply pose guidance from preset ONLY to body position (arms, stance) - but NEVER alter face expression, gender-specific body characteristics, or body shape. If preset pose conflicts with identity, IGNORE preset pose.]\n\n`
-  message += `CLOTHING:\n[Preserve EXACT garment type, color, pattern, texture from analysis JSON. PRESET CANNOT CHANGE CLOTHING - clothing is preserved exactly as analyzed.]\n\n`
+  message += `CLOTHING:\n[REPLACE the ENTIRE garment from person image with the EXACT garment from clothing reference. Preserve EXACT garment type, color, pattern, texture, sleeve length, and neckline from analysis JSON. CRITICAL: If clothing reference is SLEEVELESS, the output MUST be sleeveless - show full arms, shoulders, and armpits. If reference has sleeves, match exact sleeve length. This is COMPLETE REPLACEMENT, not overlay. PRESET CANNOT CHANGE CLOTHING - clothing is preserved exactly as analyzed.]\n\n`
   if (preset) {
     const backgroundDesc = preset.background || (preset.positive?.join(', ') || 'preset style')
     const lightingDesc = preset.lighting

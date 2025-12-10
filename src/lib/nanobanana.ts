@@ -138,8 +138,17 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
  • COMPLETELY IGNORE ANY PERSON in the clothing image - DO NOT extract, copy, or use ANY body parts, skin, hair, or identity from it
  • DO NOT create a second person from the clothing image - ONLY ONE PERSON should appear in the output (the person from Person Image)
  • If you see a face in the clothing image, PRETEND IT DOES NOT EXIST - focus ONLY on the garment itself
- • Apply the extracted garment naturally to the person from Person Image
- • The output must show ONLY the person from Person Image wearing the extracted garment - NO other people, NO faces from clothing image
+ 
+ ⚠️⚠️⚠️ CRITICAL: COMPLETE GARMENT REPLACEMENT (NOT OVERLAY) ⚠️⚠️⚠️
+ • REPLACE the ENTIRE garment from the person image - do NOT overlay or blend
+ • If clothing reference is SLEEVELESS: REMOVE all sleeves completely, show full arms and shoulders
+ • If clothing reference has SLEEVES: Replace with exact sleeve length from reference
+ • If clothing reference is TANK TOP/SLEEVELESS: The person's arms, shoulders, and armpits must be FULLY VISIBLE
+ • The garment must fit naturally on the person's body - not floating or disconnected
+ • Match the exact neckline, armholes, and garment shape from the clothing reference
+ • If the person image has sleeves but reference is sleeveless: COMPLETELY REMOVE sleeves, show bare arms
+ • If the person image is sleeveless but reference has sleeves: ADD sleeves exactly as shown in reference
+ • The garment should look like the person is ACTUALLY WEARING IT, not like it's pasted on
 
 ═══════════════════════════════════════════════════════════════════════════
  3. SCENE & STYLE (ATMOSPHERE ONLY - IDENTITY IS ALWAYS PRIORITY):
@@ -179,6 +188,35 @@ ${prompt}
 ═══════════════════════════════════════════════════════════════════════════
  • IMAGE 1 (PERSON): SOURCE OF TRUTH. Copy this face piixel-perfectly.
  • IMAGE 2 (CLOTHING): Source of garment.
+
+═══════════════════════════════════════════════════════════════════════════
+ CLOTHING REPLACEMENT (CRITICAL - COMPLETE REPLACEMENT, NOT OVERLAY):
+═══════════════════════════════════════════════════════════════════════════
+ ⚠️⚠️⚠️ REPLACE THE ENTIRE GARMENT FROM IMAGE 1 WITH THE GARMENT FROM IMAGE 2 ⚠️⚠️⚠️
+ 
+ • Extract the EXACT garment from Image 2 (Clothing): color, pattern, texture, buttons, zippers, fabric details
+ • COMPLETELY IGNORE ANY FACE in Image 2 - DO NOT extract, copy, or use ANY facial features
+ • COMPLETELY IGNORE ANY PERSON in Image 2 - DO NOT extract, copy, or use ANY body parts, skin, hair, or identity
+ 
+ ⚠️⚠️⚠️ SLEEVELESS CLOTHING HANDLING (CRITICAL) ⚠️⚠️⚠️
+ • If Image 2 (Clothing) is SLEEVELESS (tank top, sleeveless top, etc.):
+   - COMPLETELY REMOVE all sleeves from Image 1
+   - Show FULL arms, shoulders, and armpits
+   - The garment armholes must match the reference exactly
+   - Arms must be fully visible, not partially covered
+ • If Image 2 (Clothing) has SLEEVES:
+   - Replace with EXACT sleeve length from Image 2
+   - Match sleeve style, fit, and length precisely
+ • If Image 1 has sleeves but Image 2 is sleeveless: REMOVE sleeves completely
+ • If Image 1 is sleeveless but Image 2 has sleeves: ADD sleeves exactly as shown in Image 2
+ 
+ ⚠️⚠️⚠️ COMPLETE GARMENT REPLACEMENT RULES ⚠️⚠️⚠️
+ • REPLACE the ENTIRE garment - do NOT overlay, blend, or mix
+ • Match EXACT neckline shape from Image 2
+ • Match EXACT armhole shape from Image 2
+ • The garment must fit naturally on the person's body
+ • The garment should look like the person is ACTUALLY WEARING IT, not pasted on
+ • Match all design elements: buttons, zippers, patterns, logos exactly from Image 2
 
 ═══════════════════════════════════════════════════════════════════════════
  IDENTITY RULES (NON-NEGOTIABLE):
