@@ -353,9 +353,15 @@ export function buildTryOnPrompt(
 
   // Scene change with Higgsfield-style descriptive language
   if (presetUsed) {
-    // CRITICAL: Explicit clothing preservation instruction
-    prompt += `⚠️ CRITICAL CLOTHING RULE - DO NOT OVERRIDE:\n`
-    prompt += `The clothing MUST be EXACTLY what is shown in the clothing reference image. DO NOT invent, replace, or modify the clothing based on the preset description. The preset ONLY controls the scene, background, lighting, and pose - NEVER the clothing.\n\n`
+    // CRITICAL: Explicit identity and clothing preservation instructions
+    prompt += `⚠️⚠️⚠️ CRITICAL PRESET RULES - IDENTITY IS ALWAYS PRIORITY ⚠️⚠️⚠️:\n`
+    prompt += `1. IDENTITY PRESERVATION IS ABSOLUTE - Preset CANNOT override identity, face, body, or clothing\n`
+    prompt += `2. The FACE MUST be IDENTICAL to the person image - preset styling cannot change facial features, expression, or identity\n`
+    prompt += `3. The CLOTHING MUST be EXACTLY what is shown in the clothing reference image - DO NOT invent, replace, or modify based on preset\n`
+    prompt += `4. The BODY proportions MUST match the person image exactly - preset cannot alter body shape or gender characteristics\n`
+    prompt += `5. Preset ONLY controls: background scene, lighting atmosphere, camera settings, environment mood\n`
+    prompt += `6. If preset conflicts with identity preservation, IGNORE preset - IDENTITY WINS ALWAYS\n`
+    prompt += `7. Preset positive modifiers are ONLY for scene atmosphere - NOT for person/face/body/clothing\n\n`
 
     prompt += `SCENE: ${presetUsed.name}\n`
     prompt += `${presetUsed.description}\n\n`
@@ -420,15 +426,15 @@ export function buildTryOnPrompt(
     }
 
     if (presetUsed.pose) {
-      prompt += `🧍 POSE: ${presetUsed.pose.stance}. Arms: ${presetUsed.pose.arms}. Expression: ${presetUsed.pose.expression}\n`
+      prompt += `🧍 POSE: ${presetUsed.pose.stance}. Arms: ${presetUsed.pose.arms}. CRITICAL: Expression guidance (${presetUsed.pose.expression}) applies ONLY to body language - keep face expression IDENTICAL to person image. If preset expression conflicts with original face, IGNORE preset expression.\n`
     }
 
     prompt += `\nCAMERA (Higgsfield-style): Casual framing with slight tilt, authentic skin texture with subtle highlights, natural shadows from mixed ambient light, minor grain—intimate and immediate like an iPhone snap.\n\n`
   }
 
   // Identity with Higgsfield-style descriptive prose
-  prompt += 'IDENTITY PRESERVATION:\n'
-  prompt += 'The reference person\'s authentic skin texture reveals subtle pores, faint natural shadows, and genuine imperfections—the lived-in quality of actual human skin. Same apparent age preserved in every detail: the specific way skin creases, the precise facial hair density (or complete absence if clean-shaven), glasses if present. CRITICAL: Preserve gender expression EXACTLY - if the person is female/woman, the output MUST be female/woman with correct body proportions, curves, and feminine characteristics. If the person is male/man, the output MUST be male/man with masculine structure. Same body proportions with natural hand anatomy (5 fingers each). Zero beautification, zero de-aging, zero gender alteration.\n\n'
+  prompt += 'IDENTITY PRESERVATION (ABSOLUTE PRIORITY - PRESET CANNOT OVERRIDE):\n'
+  prompt += 'The reference person\'s authentic skin texture reveals subtle pores, faint natural shadows, and genuine imperfections—the lived-in quality of actual human skin. Same apparent age preserved in every detail: the specific way skin creases, the precise facial hair density (or complete absence if clean-shaven), glasses if present. CRITICAL: Preserve gender expression EXACTLY - if the person is female/woman, the output MUST be female/woman with correct body proportions, curves, and feminine characteristics. If the person is male/man, the output MUST be male/man with masculine structure. Same body proportions with natural hand anatomy (5 fingers each). Zero beautification, zero de-aging, zero gender alteration. PRESET STYLING CANNOT CHANGE ANY OF THIS - IDENTITY IS UNCHANGEABLE.\n\n'
 
   prompt += 'CLOTHING:\n'
   prompt += 'The garment drapes naturally over their frame—visible fabric weave, realistic creases where fabric bends, subtle shadows where cloth meets skin.\n\n'
@@ -460,9 +466,13 @@ export function buildTryOnPrompt(
     prompt += '• DO NOT uniformly warm-grade the entire image - this is the #1 AI tell\n\n'
   }
 
-  prompt += 'AVOID: Smooth plastic skin, de-aging, strange hands, overly polished advertisement look, CGI backgrounds, perfectly smooth surfaces, rendered lighting, HEAVY BOKEH TO HIDE BACKGROUND, clean sterile environments, artificial backdrop feel, UNIFORM WARM COLOR GRADING.\n\n'
+  prompt += 'AVOID: Smooth plastic skin, de-aging, strange hands, overly polished advertisement look, CGI backgrounds, perfectly smooth surfaces, rendered lighting, HEAVY BOKEH TO HIDE BACKGROUND, clean sterile environments, artificial backdrop feel, UNIFORM WARM COLOR GRADING, preset styling that alters identity/face/body/clothing.\n\n'
 
-  prompt += 'OUTPUT: THE EXACT REFERENCE PERSON (Identity preserved) appearing in the new scene. Real face, real details, no AI generation artifacts.'
+  if (presetUsed) {
+    prompt += 'OUTPUT: THE EXACT REFERENCE PERSON (Identity preserved IDENTICALLY) appearing in the preset scene. Real face, real details, no AI generation artifacts. Preset affects ONLY background/lighting/camera - person identity is UNCHANGEABLE.'
+  } else {
+    prompt += 'OUTPUT: THE EXACT REFERENCE PERSON (Identity preserved) appearing in the new scene. Real face, real details, no AI generation artifacts.'
+  }
 
   const sanitizedPrompt = FORBIDDEN_PHRASES.reduce((acc, p) => {
     const replacement = SAFE_REPLACEMENTS[p] ?? 'preserve identity'

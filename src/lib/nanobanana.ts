@@ -142,15 +142,35 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
  • The output must show ONLY the person from Person Image wearing the extracted garment - NO other people, NO faces from clothing image
 
 ═══════════════════════════════════════════════════════════════════════════
- 3. SCENE & STYLE (ATMOSPHERE ONLY):
+ 3. SCENE & STYLE (ATMOSPHERE ONLY - IDENTITY IS ALWAYS PRIORITY):
 ═══════════════════════════════════════════════════════════════════════════
 ${prompt}
 
+⚠️⚠️⚠️ CRITICAL: The above style/preset instructions are ONLY for:
+- Background scene and environment
+- Lighting atmosphere and mood
+- Camera settings and framing
+- Scene elements and props
+
+⚠️⚠️⚠️ The style/preset CANNOT change:
+- Face identity, features, expression (MUST match Person Image exactly)
+- Body proportions, shape, gender characteristics (MUST match Person Image exactly)
+- Clothing type, color, pattern (MUST match Clothing Image exactly)
+- Hair, skin tone, age (MUST match Person Image exactly)
+
 ═══════════════════════════════════════════════════════════════════════════
- FINAL OVERRIDE:
+ FINAL OVERRIDE (NON-NEGOTIABLE):
 ═══════════════════════════════════════════════════════════════════════════
- IF Style conflicts with Identity (e.g. style says "smile" but person is serious),
+ IF Style/Preset conflicts with Identity (e.g. style says "smile" but person is serious),
  IDENTITY WINS. IGNORE STYLE. KEEP ORIGINAL FACE.
+
+ IF Style/Preset conflicts with Clothing (e.g. style suggests different clothing),
+ CLOTHING WINS. IGNORE STYLE. KEEP ORIGINAL CLOTHING.
+
+ IF Style/Preset conflicts with Body (e.g. style suggests different body shape),
+ BODY WINS. IGNORE STYLE. KEEP ORIGINAL BODY.
+
+ PRIORITY ORDER: IDENTITY > CLOTHING > BODY > STYLE/PRESET
 
  OUTPUT: PHOTOREALISTIC CLONE OF THE PERSON IN THE CLOTHES.`
       : `TASK: EXACT FACE REPLICATION & TRY-ON
@@ -175,15 +195,30 @@ ${prompt}
  ⛔ ONLY ONE PERSON in output - the person from Image 1. NO second person from clothing image.
 
 ═══════════════════════════════════════════════════════════════════════════
- STYLE INSTRUCTIONS:
+ STYLE INSTRUCTIONS (ATMOSPHERE ONLY - IDENTITY IS ALWAYS PRIORITY):
 ═══════════════════════════════════════════════════════════════════════════
 ${prompt}
 
+⚠️⚠️⚠️ CRITICAL: The above style/preset instructions are ONLY for:
+- Background scene and environment
+- Lighting atmosphere and mood
+- Camera settings and framing
+
+⚠️⚠️⚠️ The style/preset CANNOT change:
+- Face identity, features, expression (MUST match Image 1 exactly)
+- Body proportions, shape, gender characteristics (MUST match Image 1 exactly)
+- Clothing type, color, pattern (MUST match Clothing Image exactly)
+
 ═══════════════════════════════════════════════════════════════════════════
- PRIORITY FINAL CHECK:
+ PRIORITY FINAL CHECK (NON-NEGOTIABLE):
 ═══════════════════════════════════════════════════════════════════════════
- If style prompts differ from the face in Image 1, IGNORE style.
- IDENTITY IS KING.
+If style/preset prompts differ from the face in Image 1, IGNORE style.
+If style/preset prompts differ from the body in Image 1, IGNORE style.
+If style/preset prompts differ from the clothing, IGNORE style.
+
+PRIORITY ORDER: IDENTITY > CLOTHING > BODY > STYLE/PRESET
+
+IDENTITY IS KING. CLOTHING IS QUEEN. STYLE IS SERVANT.
  
  OUTPUT: The SAME PERSON from Image 1 wearing the new clothes. ONLY ONE PERSON. NO second person from clothing image.`)
 

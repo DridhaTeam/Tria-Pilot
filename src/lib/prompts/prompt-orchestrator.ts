@@ -267,13 +267,17 @@ function buildUserMessage(
 
     // Note: Legacy instructions field removed for safety (could contain banned verbs)
 
-    message += `\n⚠️ CRITICAL PRESET APPLICATION RULES:\n`
-    message += `1. Apply preset ONLY to: background, lighting, camera angle/lens, environment, mood, color grading, POSE GUIDANCE\n`
-    message += `2. NEVER apply preset to: FACE (must be IDENTICAL to input), hair color, body shape, clothing type/color/pattern\n`
-    message += `3. FACE IDENTITY IS SACRED - never change any facial feature\n`
-    message += `4. Include specified background PEOPLE and OBJECTS for realism\n`
-    message += `5. Apply pose guidance to body position (but keep FACE identical)\n`
-    message += `6. Avoid negative modifiers completely\n\n`
+    message += `\n⚠️⚠️⚠️ CRITICAL PRESET APPLICATION RULES - IDENTITY IS ALWAYS PRIORITY ⚠️⚠️⚠️:\n`
+    message += `1. IDENTITY PRESERVATION IS ABSOLUTE - Preset CANNOT override identity, face, body, or clothing\n`
+    message += `2. Apply preset ONLY to: background scene, lighting atmosphere, camera angle/lens, environment mood\n`
+    message += `3. NEVER apply preset to: FACE (must be IDENTICAL to input), hair, skin tone, body shape, clothing type/color/pattern\n`
+    message += `4. FACE IDENTITY IS SACRED - preset styling must NEVER alter facial features, expression, or identity\n`
+    message += `5. If preset conflicts with identity preservation, IGNORE preset - IDENTITY WINS ALWAYS\n`
+    message += `6. Preset positive modifiers are ONLY for scene atmosphere - NOT for person/face/body/clothing\n`
+    message += `7. Include specified background PEOPLE and OBJECTS for realism (but person identity stays from person image)\n`
+    message += `8. Apply pose guidance ONLY to body position (but keep FACE identical - do not change expression based on preset)\n`
+    message += `9. Avoid negative modifiers completely - they might interfere with identity\n`
+    message += `10. REMEMBER: Preset = SCENE STYLING ONLY. Identity = UNCHANGEABLE.\n\n`
   } else {
     message += `📝 NO PRESET SELECTED - Use default (clothing swap only, preserve original background/lighting)\n\n`
   }
@@ -287,9 +291,10 @@ function buildUserMessage(
   }
 
   message += `Generate a production-level prompt in this EXACT format:\n\n`
-  message += `IDENTITY:\n[Preserve EXACT face structure (jawline, cheekbones, eyes, nose, lips - IDENTICAL to input), hair (length/color/texture), skin tone from analysis JSON. CRITICAL: Preserve gender_expression EXACTLY - if person is female/woman, output MUST be female/woman with correct body proportions, curves, and characteristics. If person is male/man, output MUST be male/man. NEVER alter gender characteristics.]\n\n`
-  message += `BODY:\n[Preserve body proportions from analysis JSON EXACTLY. If gender_expression is female/woman: preserve natural curves, hip-to-waist ratio, breast shape, and feminine body characteristics. If gender_expression is male/man: preserve masculine body structure, shoulder width, and male proportions. Apply pose guidance from preset if specified, but NEVER alter gender-specific body characteristics.]\n\n`
-  message += `CLOTHING:\n[Preserve EXACT garment type, color, pattern, texture from analysis JSON]\n\n`
+  message += `⚠️ PRIORITY ORDER (NON-NEGOTIABLE):\n1. IDENTITY (highest priority - NEVER override)\n2. CLOTHING (second priority - preserve exactly)\n3. PRESET STYLING (lowest priority - only if it doesn't conflict with identity/clothing)\n\n`
+  message += `IDENTITY:\n[Preserve EXACT face structure (jawline, cheekbones, eyes, nose, lips - IDENTICAL to input), hair (length/color/texture), skin tone from analysis JSON. CRITICAL: Preserve gender_expression EXACTLY - if person is female/woman, output MUST be female/woman with correct body proportions, curves, and characteristics. If person is male/man, output MUST be male/man. NEVER alter gender characteristics. PRESET CANNOT CHANGE THIS - IDENTITY IS ABSOLUTE.]\n\n`
+  message += `BODY:\n[Preserve body proportions from analysis JSON EXACTLY. If gender_expression is female/woman: preserve natural curves, hip-to-waist ratio, breast shape, and feminine body characteristics. If gender_expression is male/man: preserve masculine body structure, shoulder width, and male proportions. Apply pose guidance from preset ONLY to body position (arms, stance) - but NEVER alter face expression, gender-specific body characteristics, or body shape. If preset pose conflicts with identity, IGNORE preset pose.]\n\n`
+  message += `CLOTHING:\n[Preserve EXACT garment type, color, pattern, texture from analysis JSON. PRESET CANNOT CHANGE CLOTHING - clothing is preserved exactly as analyzed.]\n\n`
   if (preset) {
     const backgroundDesc = preset.background || (preset.positive?.join(', ') || 'preset style')
     const lightingDesc = preset.lighting
@@ -307,12 +312,12 @@ function buildUserMessage(
       if (preset.backgroundElements.atmosphere) sceneElements += `Atmosphere: ${preset.backgroundElements.atmosphere}. `
     }
 
-    message += `BACKGROUND:\n[Apply preset "${preset.name}": ${backgroundDesc}. ${sceneElements}Lighting: ${lightingDesc}. Use positive modifiers: ${preset.positive?.join(', ') || 'preset style'}]\n\n`
-    message += `CAMERA:\n[Apply preset camera: ${cameraDesc}]\n\n`
+    message += `BACKGROUND:\n[Apply preset "${preset.name}" ONLY to background scene: ${backgroundDesc}. ${sceneElements}Lighting: ${lightingDesc}. Positive modifiers are ONLY for scene atmosphere - NOT for person/face/body/clothing. REMEMBER: Background changes, person identity stays IDENTICAL.]\n\n`
+    message += `CAMERA:\n[Apply preset camera settings ONLY: ${cameraDesc}. Camera changes, person identity stays IDENTICAL.]\n\n`
 
-    // Add pose if specified
+    // Add pose if specified - but with strict identity preservation
     if (preset.pose) {
-      message += `POSE:\n[Apply: ${preset.pose.stance}. Arms: ${preset.pose.arms}. Expression: ${preset.pose.expression}. Energy: ${preset.pose.energy}${preset.pose.bodyAngle ? `. Body angle: ${preset.pose.bodyAngle}` : ''}]\n\n`
+      message += `POSE:\n[Apply ONLY body position from preset: ${preset.pose.stance}. Arms: ${preset.pose.arms}. Body angle: ${preset.pose.bodyAngle || 'preserve original'}. CRITICAL: Do NOT change face expression based on preset - keep face expression IDENTICAL to person image. Energy: ${preset.pose.energy} (apply to body language only, not face). If preset expression conflicts with person's original expression, IGNORE preset expression - keep original face.]\n\n`
     }
   } else {
     message += `BACKGROUND:\n[Keep original background and lighting from analysis JSON - NO changes]\n\n`
