@@ -15,6 +15,14 @@ const PROMPT_ORCHESTRATOR_SYSTEM = `You are the Prompt Orchestrator.
 
 Your job: keep identity, clothing, face structure, body shape, and real features EXACTLY the same with ZERO DEVIATION.
 
+🎯🎯🎯 CRITICAL FACE SOURCE RULE 🎯🎯🎯
+- The FACE in the output MUST come from the PERSON IMAGE ONLY
+- The clothing reference image MAY contain a face - YOU MUST COMPLETELY IGNORE IT
+- NEVER use, copy, or reference any face from the clothing image
+- The person image is the ONLY source of facial identity
+- If the clothing image has a different person wearing the clothes, IGNORE that person entirely
+- Extract ONLY the garment from clothing image, use ONLY the face from person image
+
 ⛔⛔⛔ CRITICAL FACIAL HAIR RULE ⛔⛔⛔
 - If person is CLEAN-SHAVEN → output MUST be CLEAN-SHAVEN (NO beard, NO stubble, NO facial hair added)
 - If person HAS A BEARD → output MUST have the EXACT SAME beard style and density
@@ -22,49 +30,47 @@ Your job: keep identity, clothing, face structure, body shape, and real features
 - NEVER remove facial hair from a bearded person
 - This is NON-NEGOTIABLE
 
-PRESERVE IDENTITY (Zero Deviation):
-- Face structure: jaw, cheekbones, eyes, nose, eyebrows, lips - EXACT MATCH
+PRESERVE IDENTITY (Zero Deviation) - FROM PERSON IMAGE ONLY:
+- Face structure: jaw, cheekbones, eyes, nose, eyebrows, lips - EXACT MATCH to PERSON IMAGE
 - Gender expression: EXACT MATCH (female/woman stays female/woman, male/man stays male/man) - CRITICAL
 - Facial hair: EXACT MATCH (clean-shaven stays clean-shaven, beard stays beard)
-- Hair: length, density, placement - EXACT MATCH
-- Skin tone and undertone - EXACT MATCH
-- Body proportions and shape - EXACT MATCH (preserve gender-specific characteristics: curves, hip-to-waist ratio for women; shoulder width, masculine structure for men)
+- Hair: length, density, placement - EXACT MATCH to PERSON IMAGE
+- Skin tone and undertone - EXACT MATCH to PERSON IMAGE
+- Body proportions and shape - EXACT MATCH to PERSON IMAGE
 
-PRESERVE CLOTHING (Exact Match):
+PRESERVE CLOTHING (From Clothing Reference - GARMENT ONLY):
 - Garment type: T-shirt stays T-shirt, kurta stays kurta - NO CATEGORY CHANGES
-- Color, texture, pattern - EXACT MATCH
+- Color, texture, pattern - EXACT MATCH from CLOTHING REFERENCE
 - Sleeve length: EXACT MATCH - if reference is sleeveless, output MUST be sleeveless (show full arms/shoulders)
 - Neckline: EXACT MATCH - match the exact neckline shape from reference
 - Accessories: ONLY if they exist in input image - NEVER ADD
 - Never add: chains, jackets, glasses, earrings, new patterns
-- CRITICAL: Clothing reference image is for GARMENT EXTRACTION ONLY - COMPLETELY IGNORE any face, person, or identity in clothing image
-- CRITICAL: COMPLETE GARMENT REPLACEMENT - replace entire garment, not overlay. If reference is sleeveless, remove all sleeves completely.
-- ONLY ONE PERSON in output - the person from person image. NO second person from clothing image
+- ⛔ CRITICAL: Clothing reference is for GARMENT EXTRACTION ONLY
+- ⛔ COMPLETELY IGNORE any face/person in clothing image - use face from PERSON IMAGE ONLY
+- ⛔ COMPLETE GARMENT REPLACEMENT - replace entire garment, not overlay
+- ONLY ONE PERSON in output - the person from PERSON IMAGE. NO face from clothing image.
 
 PRESERVE BODY LANGUAGE:
-- Pose, silhouette, body language - EXACT MATCH
+- Pose, silhouette, body language - EXACT MATCH to PERSON IMAGE
 
 YOU MUST NEVER:
+- Use any face from the clothing reference image (CRITICAL - this is the #1 error)
 - Hallucinate new items
 - Remove items
 - Alter hair
-- Alter face
+- Alter face structure
 - ADD BEARD OR STUBBLE TO CLEAN-SHAVEN PERSON
-- Alter gender characteristics (CRITICAL: female/woman MUST stay female/woman, male/man MUST stay male/man)
-- Change body proportions that are gender-specific (curves, hip-to-waist ratio, breast shape for women; shoulder width, masculine structure for men)
-- Extract or use ANY face from clothing reference image - COMPLETELY IGNORE any face in clothing image
-- Create multiple people - ONLY ONE PERSON in output (from person image)
-- Use any identity/face/body from clothing image - it is GARMENT EXTRACTION ONLY
+- Alter gender characteristics
+- Change body proportions
+- Create multiple people
 - Add or remove tattoos, piercings
 - Change clothing category
 
 YOUR OUTPUT:
-- Merge extracted JSON with user request
-- Layer preset style SAFELY (only lighting, camera, environment, cinematic details)
-- Maintain identity and clothing EXACTLY
-- Maintain body structure EXACTLY
-- PRESERVE FACIAL HAIR STATE EXACTLY
-- Add ONLY: lighting improvements, camera settings, environment, cinematic detailing
+- Face = PERSON IMAGE face (NEVER from clothing reference)
+- Clothing = CLOTHING REFERENCE garment (ignore any face/person in it)
+- Body = PERSON IMAGE body
+- Scene = Preset styling (background, lighting, camera only)
 
 Input: Gemini JSON + Preset + User Request + Model Metadata
 Output: Production-level prompt in IDENTITY/BODY/CLOTHING/BACKGROUND/CAMERA format`
@@ -121,15 +127,17 @@ function buildFinalPromptWithPreset(
     }
   }
 
-  // Build prompt using the unified builder that outputs the exact final format
-  let finalPrompt = buildTryOnPrompt('', '', preset)
+  const basePrompt = buildTryOnPrompt('', '', preset)
 
-  // Apply safety rules
-  finalPrompt = applySafetyRules(finalPrompt)
+  // If ChatGPT provided a detailed prompt, append our guardrail base template so Gemini gets both
+  let mergedPrompt: string
+  if (chatGPTPrompt && chatGPTPrompt.trim().length > 0) {
+    mergedPrompt = `${chatGPTPrompt.trim()}\n\n---\n\n${basePrompt}`
+  } else {
+    mergedPrompt = basePrompt
+  }
 
-  // Final prompt must keep exact structure; do not append extra sections
-
-  return finalPrompt
+  return applySafetyRules(mergedPrompt)
 }
 
 export async function generatePromptFromAnalysis(

@@ -9,8 +9,10 @@ const getClient = () => {
 
 export interface TryOnOptions {
   personImage: string // base64 (with or without data URI prefix) - primary image
-  personImages?: string[] // Optional: additional person images for Pro model (up to 5 total for character consistency)
-  clothingImage?: string // base64 (with or without data URI prefix)
+  personImages?: string[] // Optional: additional person images for Pro model
+  clothingImage?: string // base64 - optional clothing to add/change
+  accessoryImages?: string[] // NEW: base64 images of accessories (purse, shoes, hat, etc.)
+  accessoryTypes?: ('purse' | 'shoes' | 'hat' | 'jewelry' | 'bag' | 'watch' | 'sunglasses' | 'scarf' | 'other')[] // NEW: type labels for each accessory
   prompt: string
   model?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview'
   aspectRatio?: '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'
@@ -75,12 +77,14 @@ export interface TryOnOptions {
 export async function generateTryOn(options: TryOnOptions): Promise<string> {
   const {
     personImage,
-    personImages = [], // Additional person images for Pro model
+    personImages = [],
     clothingImage,
+    accessoryImages = [], // NEW: accessory images
+    accessoryTypes = [], // NEW: accessory type labels
     prompt,
-    model = 'gemini-2.5-flash-image', // Default to Flash (faster, cheaper, good quality)
-    aspectRatio = '4:5', // Default portrait aspect ratio for try-on
-    resolution = '2K', // Default 2K for quality
+    model = 'gemini-2.5-flash-image',
+    aspectRatio = '4:5',
+    resolution = '2K',
   } = options
 
   try {
@@ -95,7 +99,6 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     const contents: ContentListUnion = []
 
     // 1. Pro-specific vs Flash prompting
-    // SIMPLIFIED: Complex prompts confuse Pro model. Simpler is better.
     const isPro = model === 'gemini-3-pro-image-preview'
 
     const enhancedPrompt: string = isPro
@@ -272,27 +275,28 @@ OUTPUT: The SAME PERSON from Image 1 wearing the new clothes. ONLY ONE PERSON. N
       throw new Error('Invalid person image: image data is too short or empty')
     }
 
-    // Pro model: Use multiple person images for stronger character DNA (up to 5 human references)
-    // If user provided additional images, use them. Otherwise, duplicate the primary image 3x
+    // CRITICAL: Label person images explicitly as FACE SOURCE
+    contents.push(`🎯🎯🎯 FACE SOURCE - USE THIS FACE ONLY 🎯🎯🎯
+The following image(s) are the ONLY source for the person's face and identity.
+COPY THIS FACE EXACTLY. This is the ONLY face that should appear in the output.
+DO NOT use any face from the clothing reference image.`)
+
     if (isPro) {
-      // Collect all person images (primary + additional)
       const allPersonImages = [cleanPersonImage]
 
-      // Add any additional person images provided by user
-      for (const additionalImage of personImages.slice(0, 4)) { // Max 4 additional = 5 total
+      for (const additionalImage of personImages.slice(0, 4)) {
         const cleanAdditional = additionalImage.replace(/^data:image\/[a-z]+;base64,/, '')
         if (cleanAdditional && cleanAdditional.length >= 100) {
           allPersonImages.push(cleanAdditional)
         }
       }
 
-      // If user didn't provide multiple images, duplicate the primary for reinforcement
       while (allPersonImages.length < 3) {
         allPersonImages.push(cleanPersonImage)
       }
 
-      // Add all person images to contents
-      for (let i = 0; i < allPersonImages.length; i++) {
+      for (let i = 0; i < Math.min(allPersonImages.length, 5); i++) {
+        contents.push(`[FACE SOURCE ${i + 1}] - Copy this exact face:`)
         contents.push({
           inlineData: {
             data: allPersonImages[i],
@@ -300,16 +304,16 @@ OUTPUT: The SAME PERSON from Image 1 wearing the new clothes. ONLY ONE PERSON. N
           },
         } as any)
       }
-      console.log(`📸 Added ${allPersonImages.length} person image(s) for Pro character DNA(${personImages.length > 0 ? 'user provided' : 'auto-replicated'})`)
+      console.log(`📸 Added ${Math.min(allPersonImages.length, 5)} person image(s) for Pro character DNA`)
     } else {
-      // Flash model: Boosting identity signal with key duplication
-      // Send image twice to force attention
+      contents.push('[FACE SOURCE - PRIMARY] - This is THE face to copy:')
       contents.push({
         inlineData: {
           data: cleanPersonImage,
           mimeType: 'image/jpeg',
         },
       } as any)
+      contents.push('[FACE SOURCE - REINFORCEMENT] - Same face again for emphasis:')
       contents.push({
         inlineData: {
           data: cleanPersonImage,
@@ -319,24 +323,27 @@ OUTPUT: The SAME PERSON from Image 1 wearing the new clothes. ONLY ONE PERSON. N
       console.log('📸 Added person image 2x for Flash face reference')
     }
 
-    // 3. Add clothing image if provided
-    // CRITICAL: Add strict instructions BEFORE clothing image to ignore faces
+    // 3. Add clothing image if provided (with MAXIMUM guardrails against face extraction)
     if (clothingImage) {
-      contents.push(`⚠️⚠️⚠️ CRITICAL CLOTHING IMAGE RULES - READ CAREFULLY ⚠️⚠️⚠️
-      
-THE NEXT IMAGE IS A CLOTHING REFERENCE IMAGE ONLY.
+      contents.push(`🚫🚫🚫 CLOTHING REFERENCE - GARMENT ONLY - NO FACE 🚫🚫🚫
 
-STRICT RULES FOR CLOTHING IMAGE:
-1. EXTRACT ONLY THE GARMENT/CLOTHING - color, pattern, texture, buttons, zippers, fabric details
-2. COMPLETELY IGNORE ANY FACE in this image - DO NOT extract, copy, or use ANY facial features
-3. COMPLETELY IGNORE ANY PERSON in this image - DO NOT extract, copy, or use ANY body parts, skin, hair, or identity
-4. DO NOT create a second person from this image - ONLY ONE PERSON should appear in the output (the person from the Person Image)
-5. This image is ONLY for CLOTHING/GARMENT extraction - treat it like a flat lay or product photo
-6. If you see a face in the clothing image, PRETEND IT DOES NOT EXIST - focus ONLY on the garment itself
-7. The output must show ONLY the person from the Person Image wearing this garment - NO other people
+⛔⛔⛔ CRITICAL WARNING ⛔⛔⛔
+The next image is a CLOTHING REFERENCE ONLY.
+There MAY be a person/face in this image - YOU MUST COMPLETELY IGNORE IT.
 
-REMEMBER: Clothing image = GARMENT ONLY. Person image = IDENTITY ONLY.`)
+🎯 YOUR TASK FOR THIS IMAGE:
+✅ EXTRACT: The garment/clothing ONLY (color, pattern, texture, buttons, zippers, fabric)
+❌ IGNORE: ANY face in this image - DO NOT copy, use, or reference it
+❌ IGNORE: ANY person/body in this image - DO NOT copy skin, hair, or body shape
+❌ IGNORE: ANY identity in this image - The face you use comes from [FACE SOURCE] images ONLY
 
+⚠️ THE FACE IN THE OUTPUT MUST COME FROM THE [FACE SOURCE] IMAGES ABOVE ⚠️
+⚠️ NOT from this clothing reference image ⚠️
+⚠️ If you see a face here, PRETEND IT DOES NOT EXIST ⚠️
+
+Think of this image as a FLAT LAY or PRODUCT PHOTO - extract the garment as if it were on a mannequin.`)
+
+      contents.push('[GARMENT REFERENCE - EXTRACT CLOTHING ONLY, IGNORE ANY FACE]:')
       const cleanClothingImage = clothingImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanClothingImage && cleanClothingImage.length >= 100) {
         contents.push({
@@ -345,39 +352,79 @@ REMEMBER: Clothing image = GARMENT ONLY. Person image = IDENTITY ONLY.`)
             mimeType: 'image/jpeg',
           },
         } as any)
-        
-        // Add reinforcement after clothing image
-        contents.push(`✅ CLOTHING IMAGE PROCESSED:
-- Did you extract ONLY the garment details? (color, pattern, texture, buttons, zippers)
-- Did you COMPLETELY IGNORE any face in that image?
-- Did you COMPLETELY IGNORE any person/body in that image?
-- Remember: ONLY ONE PERSON in output (from Person Image), wearing the extracted garment.`)
-        
-        console.log('👕 Added clothing image (1x) for clothing reference with strict face-ignoring rules')
+
+        contents.push(`✅ CLOTHING IMAGE PROCESSED - VERIFICATION CHECKLIST:
+□ Did you extract ONLY the garment details? (color, pattern, texture, buttons, zippers)
+□ Did you COMPLETELY IGNORE any face in that image? (The face MUST come from [FACE SOURCE])
+□ Did you COMPLETELY IGNORE any person/body in that image?
+□ Will the output show the face from [FACE SOURCE] images, NOT from this clothing image?
+
+⚠️ REMINDER: The output face = [FACE SOURCE] face. NOT the clothing image face.`)
+
+        console.log('👕 Added clothing image with MAXIMUM face-ignore guardrails')
       } else {
         console.warn('Clothing image appears invalid, skipping')
       }
     }
 
-    // 4. Add person image AGAIN at the end to reinforce face identity
-    // Research shows repeating the reference face helps preserve identity
+    // 4. Add accessory references if provided (treated similar to clothing)
+    if (accessoryImages.length > 0) {
+      const accessoryLabels = accessoryTypes.length > 0 ? accessoryTypes : accessoryImages.map(() => 'accessory')
+      contents.push('👜 ACCESSORY REFERENCES (apply EXACT item, ignore any faces/bodies in reference):')
+
+      accessoryImages.slice(0, 4).forEach((image, idx) => {
+        const cleanAccessory = image.replace(/^data:image\/[a-z]+;base64,/, '')
+        if (cleanAccessory && cleanAccessory.length >= 100) {
+          const label = accessoryLabels[idx] || `accessory_${idx + 1}`
+          contents.push(`Accessory: ${label}`)
+          contents.push({
+            inlineData: {
+              data: cleanAccessory,
+              mimeType: 'image/jpeg',
+            },
+          } as any)
+          console.log(`👜 Added accessory reference: ${label}`)
+        }
+      })
+    }
+
+    // 5. Add person image again at the end for FINAL identity lock
+    contents.push(`🎯🎯🎯 FINAL FACE VERIFICATION - THIS IS THE FACE TO USE 🎯🎯🎯
+Look at this image one more time. THIS is the face that MUST appear in your output.
+NOT any face from the clothing reference. THIS FACE ONLY.`)
+    
+    contents.push('[FINAL FACE SOURCE - USE THIS EXACT FACE IN OUTPUT]:')
     contents.push({
       inlineData: {
         data: cleanPersonImage,
         mimeType: 'image/jpeg',
       },
     } as any)
-    contents.push(`FINAL IDENTITY CONFIRMATION:
-THIS IS A CLONING TASK - NOT A GENERATION TASK.
-1. The FACE in output MUST be an exact digital copy of THIS person (from Person Image) - NO other faces.
-2. ONLY ONE PERSON in the output - the person from Person Image. NO second person from clothing image.
-3. The GENDER EXPRESSION MUST match exactly (female/woman stays female/woman, male/man stays male/man) - CRITICAL.
-4. The HAIR MUST match this person's length and style (Short stays short).
-5. The BODY MUST match this person's build and gender-specific characteristics (No slimming, preserve curves for women, masculine structure for men).
-6. The CLOTHING MUST match the specific garment from clothing image (color, pattern, texture) - but IGNORE any face/person in clothing image.
-7. COMPLETELY IGNORE any face, person, or identity in the clothing image - it is for GARMENT EXTRACTION ONLY.
-DO NOT GENERATE A RANDOM PERSON. DO NOT CREATE A SECOND PERSON. REPLICATE THIS IDENTITY EXACTLY.`)
-    console.log('🔒 Added person image AGAIN at end for identity anchor')
+    contents.push(`🔒 FINAL IDENTITY LOCK - READ CAREFULLY 🔒
+
+THIS IS A FACE CLONING TASK - NOT A CREATIVE GENERATION TASK.
+
+FACE SOURCE: The [FACE SOURCE] images shown above (and this final image)
+FACE TO USE: ONLY the face from [FACE SOURCE] images
+FACE TO IGNORE: ANY face that appeared in the [GARMENT REFERENCE] image
+
+VERIFICATION BEFORE OUTPUT:
+1. ✅ The FACE in output = exact copy of [FACE SOURCE] face (jawline, eyes, nose, lips, skin tone)
+2. ✅ The FACE in output ≠ the face from clothing reference (if there was one)
+3. ✅ ONLY ONE PERSON in output - from [FACE SOURCE]
+4. ✅ GENDER preserved exactly (female stays female, male stays male)
+5. ✅ HAIR matches [FACE SOURCE] (length, color, style)
+6. ✅ BODY matches [FACE SOURCE] (proportions, build)
+7. ✅ CLOTHING matches [GARMENT REFERENCE] (color, pattern, texture)
+
+⛔ DO NOT use any face from the clothing image
+⛔ DO NOT generate a random/generic face
+⛔ DO NOT beautify or alter the [FACE SOURCE] face
+
+OUTPUT = [FACE SOURCE] person wearing [GARMENT REFERENCE] clothing.`)
+    console.log('🔒 Added FINAL identity anchor with explicit face source reminder')
+
+    console.log('✅ Contents prepared with strict references')
 
     // Build image config
     const imageConfig = {
