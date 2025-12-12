@@ -127,13 +127,17 @@ EXACT CLOTHING REQUIRED:
 - EXACT same embroidery, prints, or decorative elements
 - Do NOT modify or change the garment design in any way
 
-PHOTO QUALITY POLISH:
-- Preserve skin micro-texture (pores, natural imperfections)
-- No skin smoothing or beautification
-- Natural skin sheen and realistic lighting on face
-- Sharp facial details, no blur
-- Match lighting direction on face with the scene
-- Seamless blend between person and new environment`
+PHOTO-REALISTIC QUALITY (NO AI LOOK):
+- Output must look like a REAL PHOTOGRAPH, not AI generated
+- Natural, realistic lighting - no artificial glow or halos
+- Realistic shadows that match the environment
+- No HDR over-processing or unnatural contrast
+- Skin must have natural texture with pores visible - no plastic/smooth look
+- No over-saturation of colors
+- Background must look like a real photograph, not a render
+- Seamless, natural blend between person and environment
+- Match the lighting direction consistently across the whole image
+- Avoid that "AI generated" uncanny valley look`
     
     if (hasClothingChange) {
       simplePrompt += `\n\nEXACT Clothing reference (copy this EXACT garment - EXACT color, EXACT pattern, EXACT design):`
@@ -171,7 +175,7 @@ PHOTO QUALITY POLISH:
       }
     }
 
-    // STEP 5: Final reinforcement with EXACT for face, pose AND clothing
+    // STEP 5: Final reinforcement with EXACT + anti-AI-look
     contents.push(`
 FINAL OUTPUT REQUIREMENTS:
 - EXACT same person, EXACT same face from the first image
@@ -179,10 +183,15 @@ FINAL OUTPUT REQUIREMENTS:
 - EXACT same clothing as shown in the clothing reference - EXACT color, EXACT pattern, EXACT design
 - The garment must be an EXACT copy - no modifications, no color shifts, no pattern changes
 - Only the background/environment changes, the person stays in their EXACT original pose
-- Photo-realistic quality - looks like a real photograph, not AI generated
-- Natural lighting on face and body matching the new scene
-- Crisp details, realistic skin texture with pores visible
-- Professional fashion photography quality`)
+
+CRITICAL - AVOID AI LOOK:
+- Must look like a REAL PHOTOGRAPH taken by a camera
+- NO artificial lighting, NO glowing edges, NO halos
+- NO plastic skin, NO over-smoothing
+- NO over-saturated or unrealistic colors
+- Background must be REALISTIC - like a real location photo
+- Lighting must be NATURAL and CONSISTENT across the image
+- The final image should be indistinguishable from a real photo`)
 
     // STEP 5: Add accessories if any
     if (accessoryImages.length > 0) {
