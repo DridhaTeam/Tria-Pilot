@@ -119,7 +119,7 @@ export default function InfluencerOnboardingPage() {
             const files = photoFiles.slice(0, 3) // onboarding: limit initial upload
             for (let i = 0; i < files.length; i++) {
               const base64 = await toBase64(files[i])
-              await fetch('/api/profile-images', {
+              const uploadRes = await fetch('/api/profile-images', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -128,6 +128,10 @@ export default function InfluencerOnboardingPage() {
                   makePrimary: i === 0,
                 }),
               })
+              if (!uploadRes.ok) {
+                const errData = await uploadRes.json().catch(() => null)
+                throw new Error(errData?.error || `Failed to upload photo ${i + 1}`)
+              }
             }
           } catch (e) {
             console.warn('Profile photo upload failed (non-blocking):', e)

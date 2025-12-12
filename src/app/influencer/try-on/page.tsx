@@ -43,7 +43,7 @@ function TryOnPageContent() {
     const [accessoryImages, setAccessoryImages] = useState<string[]>([])
     const [accessoryTypes, setAccessoryTypes] = useState<('purse' | 'shoes' | 'hat' | 'jewelry' | 'bag' | 'watch' | 'sunglasses' | 'scarf' | 'other')[]>([])
     const [loading, setLoading] = useState(false)
-    const [uploadingImage, setUploadingImage] = useState<'person' | 'clothing' | 'additional' | 'accessory' | null>(null)
+    const [uploadingImage, setUploadingImage] = useState<'person' | 'clothing' | 'background' | 'additional' | 'accessory' | null>(null)
     const [result, setResult] = useState<{ jobId: string; imageUrl: string } | null>(null)
     const [product, setProduct] = useState<Product | null>(null)
     const [selectedPreset, setSelectedPreset] = useState<string>('')
@@ -123,7 +123,7 @@ function TryOnPageContent() {
             return
         }
 
-        setUploadingImage(type === 'background' ? 'clothing' : type)
+        setUploadingImage(type)
 
         const reader = new FileReader()
         reader.onload = (event) => {
@@ -740,7 +740,11 @@ function TryOnPageContent() {
                                             <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center shadow-sm">
-                                                        <Upload className="w-5 h-5 text-charcoal/40" />
+                                                        {uploadingImage === 'background' ? (
+                                                            <RefreshCw className="w-5 h-5 text-peach animate-spin" />
+                                                        ) : (
+                                                            <Upload className="w-5 h-5 text-charcoal/40" />
+                                                        )}
                                                     </div>
                                                     <div className="text-left">
                                                         <p className="text-sm font-medium text-charcoal/70">Upload Background</p>
