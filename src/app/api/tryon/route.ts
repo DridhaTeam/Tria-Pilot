@@ -5,6 +5,8 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { getGeminiKey, getOpenAIKey } from '@/lib/config/api-keys'
 import { getPresetById } from '@/lib/prompts/try-on-presets'
 import { getNanoBananaPreset, buildPresetPrompt } from '@/lib/prompts/nano-banana-presets'
+import { getIntelligentPreset } from '@/lib/prompts/intelligent-presets'
+import { processPresetTryOn } from '@/lib/prompts/scenario-selector'
 import { generateTryOn } from '@/lib/nanobanana'
 import { buildEditPrompt } from '@/lib/prompts/edit-templates'
 import { writePromptFromImages } from '@/lib/openai'
@@ -141,7 +143,93 @@ export async function POST(request: Request) {
       const normalizedClothing = clothingImage ? normalizeBase64(clothingImage) : undefined
       const normalizedBackground = backgroundImage ? normalizeBase64(backgroundImage) : undefined
 
-      // Check for Nano Banana preset (new system)
+      // =========================================================================
+      // INTELLIGENT PRESET SYSTEM (NEW)
+      // If an intelligent preset is selected, GPT-4o mini automatically:
+      // 1. Analyzes the images
+      // 2. Selects the best scenario from 100 variations
+      // 3. Determines edit types automatically
+      // 4. Builds the final prompt
+      // =========================================================================
+      const intelligentPreset = stylePreset ? getIntelligentPreset(stylePreset) : null
+      
+      if (intelligentPreset) {
+        console.log(`🧠 Using Intelligent Preset: ${intelligentPreset.name}`)
+        console.log(`   Category: ${intelligentPreset.category}`)
+        console.log(`   Edit Types: ${intelligentPreset.editTypes.join(', ')}`)
+        console.log(`   Scenarios available: ${intelligentPreset.scenarios.length}`)
+
+        try {
+          // GPT-4o mini selects the best scenario and builds the prompt
+          const presetResult = await processPresetTryOn(
+            stylePreset!,
+            normalizedPerson,
+            normalizedClothing,
+            userRequest
+          )
+
+          console.log(`✅ Selected scenario: ${presetResult.scenario.id}`)
+          console.log(`   Background: ${presetResult.scenario.background.slice(0, 50)}...`)
+          console.log(`   Camera: ${presetResult.scenario.camera.angle}, ${presetResult.scenario.camera.framing}`)
+          console.log(`   Lighting: ${presetResult.scenario.lighting.time}, ${presetResult.scenario.lighting.quality}`)
+
+          // Generate the image with the intelligent preset prompt
+          const generatedImage = await generateTryOn({
+            personImage: normalizedPerson,
+            personImages: personImages?.map(img => normalizeBase64(img)),
+            editType: presetResult.editTypes[0] as any || 'clothing_change',
+            clothingImage: normalizedClothing,
+            backgroundImage: normalizedBackground,
+            accessoryImages: accessoryImages?.map(img => normalizeBase64(img)),
+            accessoryTypes,
+            prompt: presetResult.prompt,
+            model: geminiModel as 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview',
+            aspectRatio: reqAspectRatio as any,
+            resolution: reqResolution as any,
+          })
+
+          // Save and return
+          const imagePath = `tryon/${dbUser.id}/${job.id}.png`
+          const imageUrl = await saveUpload(generatedImage, imagePath, 'generations')
+
+          await prisma.generationJob.update({
+            where: { id: job.id },
+            data: {
+              status: 'completed',
+              outputImagePath: imageUrl,
+              suggestionsJSON: {
+                presetId: stylePreset,
+                presetName: intelligentPreset.name,
+                scenarioId: presetResult.scenario.id,
+                scenarioBackground: presetResult.scenario.background,
+                personDescription: presetResult.personDescription,
+                garmentDescription: presetResult.garmentDescription,
+              },
+            },
+          })
+
+          return NextResponse.json({
+            success: true,
+            jobId: job.id,
+            imageUrl,
+            preset: {
+              id: stylePreset,
+              name: intelligentPreset.name,
+              scenario: presetResult.scenario.id,
+            },
+          })
+        } catch (presetError) {
+          console.error('❌ Intelligent preset processing failed:', presetError)
+          // Fall through to legacy processing
+          console.log('⚠️ Falling back to legacy prompt generation...')
+        }
+      }
+
+      // =========================================================================
+      // LEGACY PRESET SYSTEM (fallback)
+      // =========================================================================
+      
+      // Check for Nano Banana preset
       const nanoBananaPreset = stylePreset ? getNanoBananaPreset(stylePreset) : null
       if (nanoBananaPreset) {
         console.log(`🍌 Using Nano Banana preset: ${nanoBananaPreset.name}`)
