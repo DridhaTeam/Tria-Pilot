@@ -188,24 +188,25 @@ Structure:
   "prompt": "The simple, direct prompt using 'this person'"
 }
 
-## PROMPT EXAMPLES (Nano Banana Style)
+## PROMPT EXAMPLES (IMAGE EDIT Style)
 
-**Clothing Change:**
-"Change the clothing on this person to a deep maroon sleeveless tunic with a round neckline, front placket with two buttons, and small white geometric embroidered motifs scattered across the fabric. Keep this person's exact face unchanged."
+**Clothing Change (BEST):**
+"Replace the clothing with a deep maroon sleeveless tunic featuring a round neckline, front placket with two buttons, and scattered small white geometric embroidered motifs. Lightweight cotton fabric with soft texture. Do not change the person's face, hair, or skin."
 
-**Background Change:**
-"Place this person in a sunlit forest path with dappled light through trees. Keep this person's exact face and current clothing unchanged."
+**Simple Clothing Change:**
+"Replace the outfit with the maroon tunic from the reference image. Keep the same person, same face, same pose."
 
-**With Background:**
-"Change the clothing on this person to a deep maroon kurti with white embroidery. Place this person in a Jaipur palace courtyard. Keep this person's exact face unchanged."
+**With Scene:**
+"Replace the clothing with the maroon embroidered tunic. Add a forest background with dappled sunlight. Maintain the original person's face and features exactly."
 
-## RULES
-- Use "this person" to refer to the uploaded person (this is how Nano Banana maintains face consistency)
-- Be EXTREMELY SPECIFIC about the garment (EXACT color, pattern, neckline, fit)
-- Always end with "Keep this person's exact face unchanged"
-- Keep prompts SHORT and DIRECT - Nano Banana works better with simple prompts
-- NEVER describe the face in detail - just say "this person's face"
-- If the clothing reference shows a different person, say "ignore the person in the clothing reference"`
+## RULES (CRITICAL FOR FACE CONSISTENCY)
+1. Frame as "Replace the clothing" not "Change the person"
+2. Be EXTREMELY SPECIFIC about garment details (color, pattern, neckline, fabric)
+3. End with "Do not change the person's face" or "Keep the same person"
+4. Keep prompts SHORT - under 100 words works best
+5. Do NOT describe facial features - just say "same face" or "same person"
+6. Emphasize this is an EDIT of the existing image, not a new generation
+7. Include "from the reference image" to make it clear which is the garment source`
 
   // =========================================================================
   // USER PROMPT: Photo-quality edit task instruction

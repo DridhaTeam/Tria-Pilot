@@ -61,25 +61,28 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // NANO BANANA FACE CONSISTENCY METHOD:
-    // 1. Upload reference image of the person
-    // 2. Use "this person" / "this woman" / "this man" to refer to them
-    // This is the official way to maintain face consistency!
+    // CRITICAL: Use IMAGE EDITING mode, not generation
+    // The key is to frame this as "edit the first image" not "generate new"
     // ═══════════════════════════════════════════════════════════════════════
 
-    // STEP 1: Person image FIRST (this establishes "this person")
+    // STEP 1: Start with the EDIT command referencing the image to edit
+    contents.push('Edit this image:')
     contents.push({
       inlineData: {
         data: cleanPersonImage,
         mimeType: 'image/jpeg',
       },
     } as any)
-    console.log('📸 Added person image')
+    console.log('📸 Added person image to edit')
 
-    // STEP 2: Clothing reference (if clothing change)
+    // STEP 2: Build a very direct, simple edit instruction
+    let editInstruction = ''
+    
     if (editType === 'clothing_change' && clothingImage) {
       const cleanClothingImage = clothingImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanClothingImage && cleanClothingImage.length >= 100) {
+        editInstruction = `Replace the clothing in the image above with the clothing shown in this reference image:`
+        contents.push(editInstruction)
         contents.push({
           inlineData: {
             data: cleanClothingImage,
@@ -90,10 +93,11 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       }
     }
 
-    // STEP 3: Background reference (if background change)
     if (editType === 'background_change' && backgroundImage) {
       const cleanBgImage = backgroundImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanBgImage && cleanBgImage.length >= 100) {
+        editInstruction = `Change the background in the image above to match this reference:`
+        contents.push(editInstruction)
         contents.push({
           inlineData: {
             data: cleanBgImage,
@@ -104,20 +108,18 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       }
     }
 
-    // STEP 4: Simple, strict prompt using "this person" reference
-    // This is the Nano Banana way - refer to "this person" from the uploaded image
-    const strictPrompt = `Edit this photo of this person.
-
+    // STEP 3: Final strict instruction - VERY DIRECT
+    contents.push(`
 ${prompt}
 
-STRICT RULES:
-- Keep this person's exact face (do not change or generate a new face)
-- Keep this person's exact features, skin tone, and hair
-- Only change the clothing to match the second image
-- If the second image shows a different person wearing the clothes, ignore that person's face entirely
-- Output must show this same person from the first image`
-
-    contents.push(strictPrompt)
+IMPORTANT:
+- This is an IMAGE EDIT task. Do NOT generate a new person.
+- Keep the EXACT same face from the first image.
+- Keep the same facial features, skin texture, skin tone, and hair.
+- Only replace the clothing with the garment from the reference.
+- If the clothing reference shows a model, IGNORE that model's face.
+- The output must look like a photo edit of the first image, not a new generation.
+- Maintain photo-realistic quality with natural lighting and skin texture.`)
 
     // STEP 5: Add accessories if any
     if (accessoryImages.length > 0) {
