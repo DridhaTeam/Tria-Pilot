@@ -44,7 +44,9 @@ export const openai = {
 } as OpenAI
 
 // ============================================================================
-// GPT-4o Mini Vision: Image Analysis & Prompt Writing for Gemini
+// GPT-4o Mini Vision: Intelligent Image Analysis & Strict Prompt Writing
+// Based on Nano Banana / Gemini Image Generation Best Practices
+// Reference: https://ai.google.dev/gemini-api/docs/image-generation#prompt-guide
 // ============================================================================
 
 export type TryOnEditType =
@@ -56,7 +58,7 @@ export type TryOnEditType =
 
 export interface PromptWriterInput {
   personImage: string // base64 with or without data URI prefix
-  clothingImage?: string // base64 - garment reference
+  clothingImage?: string // base64 - garment reference (may contain a person - IGNORE their face)
   backgroundImage?: string // base64 - background reference
   editType: TryOnEditType
   userRequest?: string
@@ -70,11 +72,14 @@ export interface PromptWriterResult {
 }
 
 /**
- * Use GPT-4o mini with vision to analyze images and write a detailed prompt for Gemini.
- * This function:
- * 1. Analyzes the person image (face, body, pose, clothing)
- * 2. Analyzes the reference image (garment details or background scene)
- * 3. Writes a strict prompt that preserves identity while applying the edit
+ * Use GPT-4o mini with vision to analyze images and write a STRICT, DETAILED prompt for Gemini.
+ * 
+ * Key Nano Banana principles applied:
+ * 1. "Describe the scene, don't just list keywords" - narrative prompts
+ * 2. "High-Fidelity detail preservation" - describe face features in extreme detail
+ * 3. "Advanced composition" - clear role labels for each image
+ * 4. Template: "Using the provided images, place [garment] onto [person]. 
+ *    Ensure that the features of [person] remain completely unchanged."
  */
 export async function writePromptFromImages(
   input: PromptWriterInput
@@ -94,7 +99,7 @@ export async function writePromptFromImages(
   // Build messages with images
   const imageInputs: OpenAI.Chat.Completions.ChatCompletionContentPart[] = []
 
-  // Add person image
+  // Add person image FIRST (this is the identity source)
   imageInputs.push({
     type: 'image_url',
     image_url: {
@@ -115,49 +120,104 @@ export async function writePromptFromImages(
     })
   }
 
-  const referenceLabel = editType === 'background_change' ? 'BACKGROUND REFERENCE' : 'GARMENT REFERENCE'
+  // =========================================================================
+  // SYSTEM PROMPT: Strict analysis and prompt writing rules
+  // =========================================================================
+  const systemPrompt = `You are an expert prompt engineer for Gemini (Nano Banana) image generation. Your task is to analyze two images and write an extremely precise, narrative prompt that will make Gemini perform a virtual try-on while preserving the person's EXACT identity.
 
-  const systemPrompt = `You are an expert prompt writer for AI image generation. Your job is to analyze images and write precise prompts that will be sent to Gemini for virtual try-on generation.
+## YOUR ANALYSIS TASKS
 
-CRITICAL RULES:
-1. The person's face and identity must be EXACTLY preserved - no beautification, no changes
-2. For clothing edits: describe the garment in detail but IGNORE any face/person in the garment reference
-3. For background edits: describe the environment but keep subject identity unchanged
-4. Be extremely specific about colors, textures, patterns, and proportions
-5. Write prompts that enforce strict identity preservation
+### TASK 1: Analyze the PERSON IMAGE (Image 1) in EXTREME detail
+You MUST describe every facial feature precisely because Gemini needs this to preserve identity:
+- Face shape (oval, round, heart, square, oblong)
+- Jawline (sharp, soft, angular, rounded)
+- Cheekbones (high, low, prominent, subtle)
+- Forehead (wide, narrow, high, low)
+- Eye details: shape, size, color, spacing, eyelid type
+- Eyebrow details: shape, thickness, arch, color
+- Nose details: bridge, tip, nostril shape, width
+- Lip details: shape, fullness, cupid's bow
+- Skin: exact tone (e.g., "warm olive", "cool beige", "deep brown"), texture, any marks/moles
+- Hair: color, texture (straight/wavy/curly), length, style, volume
+- Current expression
+- Body pose and proportions
+- Current clothing (what they're wearing now)
 
-OUTPUT FORMAT (JSON):
+### TASK 2: Analyze the GARMENT/REFERENCE IMAGE (Image 2) - CLOTHING ONLY
+⚠️ CRITICAL: If there is a person/face in the garment image, COMPLETELY IGNORE IT.
+Extract ONLY the garment details:
+- Garment type (blouse, dress, kurti, shirt, etc.)
+- Color: exact shade (e.g., "deep maroon", "dusty rose", "navy blue")
+- Pattern: type, colors, scale (e.g., "small white geometric motifs", "paisley in gold")
+- Fabric: material, texture, sheen (cotton, silk, linen, matte, shiny)
+- Neckline: type, depth
+- Sleeves: length, style
+- Fit: loose, fitted, A-line, etc.
+- Special details: buttons, embroidery, pleats, borders
+
+### TASK 3: Write the PROMPT for Gemini
+Follow the Nano Banana best practice: "Describe the scene, don't just list keywords."
+Write a NARRATIVE prompt that tells Gemini exactly what to do.
+
+## OUTPUT FORMAT (JSON)
 {
-  "personDescription": "Detailed description of the person: face shape, skin tone, hair, expression, pose, current clothing",
-  "referenceDescription": "Detailed description of the reference: for garments (color, pattern, fabric, neckline, sleeves, fit) or for backgrounds (scene, lighting, atmosphere)",
-  "prompt": "The complete prompt for Gemini image generation"
+  "personDescription": "Extremely detailed description of the person from Image 1",
+  "referenceDescription": "Detailed description of the GARMENT ONLY from Image 2 (no face/person details)",
+  "prompt": "The complete narrative prompt for Gemini"
 }
 
-The prompt should follow this structure:
-- Start with MODE: IMAGE EDIT
-- IDENTITY PRESERVATION section (face, skin, hair - exact match required)
-- EDIT INSTRUCTIONS section (what to change)
-- REFERENCE DETAILS section (specific attributes from the reference image)
-- QUALITY section (realistic, no beautification)
-- FINAL DIRECTIVE (face must match exactly)`
+## PROMPT STRUCTURE (follow this template)
+The prompt field MUST follow this structure:
 
-  const userPrompt = `Analyze these images and write a prompt for a ${editType.replace('_', ' ')} operation.
+\`\`\`
+Create a professional fashion photograph of THIS EXACT PERSON wearing a new garment.
 
-IMAGE 1: PERSON IMAGE (this is the subject - preserve their exact identity)
-IMAGE 2: ${referenceLabel} (extract only the ${editType === 'background_change' ? 'environment/scene' : 'clothing details'}, ignore any face/person)
+SUBJECT (from Image 1 - PRESERVE EXACTLY):
+[Detailed narrative description of the person's face, skin, hair, expression, pose]
 
-${userRequest ? `USER REQUEST: ${userRequest}` : ''}
+IDENTITY LOCK - NON-NEGOTIABLE:
+The face in the output MUST be identical to the person above. Copy exactly:
+- [Face shape and structure]
+- [Eye details]
+- [Nose and lip details]  
+- [Skin tone and texture including any moles/marks]
+- [Hair color, texture, and style]
+- [Current expression]
+Do NOT beautify, smooth, slim, or alter any facial features.
 
-Model variant: ${model} (${model === 'pro' ? 'can handle more detailed prompts' : 'keep prompt focused and concise'})
+GARMENT TO APPLY (from Image 2 - CLOTHING ONLY):
+[Detailed description of the garment: color, pattern, fabric, neckline, sleeves, fit]
+Note: Extract only the clothing from the reference. Ignore any face/person in the garment image.
 
-Write a detailed prompt that will make Gemini:
-1. Keep the person's exact face, skin texture, hair, and expression
-2. Apply the ${editType === 'background_change' ? 'new background' : 'new clothing'} from the reference
-3. Maintain realistic lighting and proportions
-4. NOT beautify or alter the person's features in any way`
+FINAL OUTPUT:
+The exact same person from Image 1, wearing the garment described above.
+Realistic photo, natural lighting, same pose and expression.
+The face MUST be a perfect match to Image 1.
+\`\`\`
+
+Remember: Gemini responds better to detailed, descriptive narratives than keyword lists.`
+
+  // =========================================================================
+  // USER PROMPT: Task instruction with context
+  // =========================================================================
+  const userPrompt = `Analyze these two images and write a Gemini prompt for a ${editType.replace('_', ' ')} operation.
+
+**IMAGE 1: PERSON IMAGE**
+This is the subject whose identity must be preserved EXACTLY. Analyze their face, skin, hair, expression, and pose in extreme detail.
+
+**IMAGE 2: ${editType === 'background_change' ? 'BACKGROUND REFERENCE' : 'GARMENT REFERENCE'}**
+${editType === 'background_change' 
+  ? 'Extract only the environment/scene details. The person in the output must still be the person from Image 1.'
+  : 'Extract ONLY the clothing details (color, pattern, fabric, style). If there is a person wearing the garment, COMPLETELY IGNORE their face - we only want the garment.'}
+
+${userRequest ? `**USER REQUEST:** ${userRequest}` : ''}
+
+**MODEL:** ${model === 'pro' ? 'Gemini 3 Pro (can handle detailed prompts)' : 'Gemini 2.5 Flash (keep prompt focused)'}
+
+Write the prompt following the template in your instructions. Be extremely specific about the person's facial features so Gemini can preserve them exactly.`
 
   try {
-    console.log('🤖 GPT-4o mini: Analyzing images and writing prompt...')
+    console.log('🤖 GPT-4o mini: Analyzing images with strict identity extraction...')
 
     const response = await openaiClient.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -172,8 +232,8 @@ Write a detailed prompt that will make Gemini:
         },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 2000,
-      temperature: 0.3,
+      max_tokens: 3000, // Increased for more detailed output
+      temperature: 0.2,  // Lower temperature for more consistent, precise output
     })
 
     const content = response.choices[0]?.message?.content
@@ -183,14 +243,20 @@ Write a detailed prompt that will make Gemini:
 
     const parsed = JSON.parse(content) as PromptWriterResult
 
-    console.log('✅ GPT-4o mini: Prompt written successfully')
-    console.log(`   Person: ${parsed.personDescription.slice(0, 100)}...`)
-    console.log(`   Reference: ${parsed.referenceDescription.slice(0, 100)}...`)
-    console.log(`   Prompt length: ${parsed.prompt.length} chars`)
+    console.log('✅ GPT-4o mini: Strict prompt written successfully')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📸 PERSON ANALYSIS:')
+    console.log(`   ${parsed.personDescription.slice(0, 200)}...`)
+    console.log('👕 GARMENT ANALYSIS (face ignored):')
+    console.log(`   ${parsed.referenceDescription.slice(0, 200)}...`)
+    console.log('📝 PROMPT STATS:')
+    console.log(`   Length: ${parsed.prompt.length} characters`)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
     return parsed
   } catch (error) {
     console.error('❌ GPT-4o mini prompt writing failed:', error)
+    console.warn('⚠️ Falling back to template-based prompt (less precise)')
 
     // Fallback: return a basic prompt using the edit templates
     const { buildEditPrompt } = await import('./prompts/edit-templates')
@@ -202,8 +268,8 @@ Write a detailed prompt that will make Gemini:
 
     return {
       prompt: fallbackPrompt,
-      personDescription: 'Analysis failed - using template',
-      referenceDescription: 'Analysis failed - using template',
+      personDescription: 'Analysis failed - using template fallback',
+      referenceDescription: 'Analysis failed - using template fallback',
     }
   }
 }
