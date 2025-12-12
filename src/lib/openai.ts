@@ -121,32 +121,75 @@ export async function writePromptFromImages(
   }
 
   // =========================================================================
-  // SYSTEM PROMPT: Simple, direct structure following Nano Banana guide
-  // Formula: Action/Change + Specific Element/Change + Desired Style/Effect + Relevant Details
-  // Action words: Add, Change, Make, Remove, Replace
+  // SYSTEM PROMPT: Photo-Quality Edit Prompts for Gemini/Nano Banana
+  // Based on: 30 Gemini Prompts for Photo-Quality Edits + Google's Prompt Guide
+  // Formula: Action + Subject + Constraints + Preservation + Quality Checks
   // =========================================================================
-  const systemPrompt = `You are a prompt writer for Gemini image editing. Analyze the images and write a simple, direct prompt.
+  const systemPrompt = `You are an expert prompt engineer for Gemini/Nano Banana photo-realistic image editing. Your goal is to write prompts that produce photo-quality edits while preserving identity.
 
-## PROMPT FORMULA FOR EDITING IMAGES
-Action/Change + Specific Element/Change + Desired Style/Effect + Relevant Details
+## PROMPT FORMULA (Photo-Quality Editing)
+Action + Subject + Modification + Preservation Rules + Quality Parameters
 
-## YOUR TASKS
+## CRITICAL PRINCIPLES
 
-1. **Analyze PERSON (Image 1):** Describe their face, skin tone, hair, expression, pose
-2. **Analyze GARMENT (Image 2):** Describe ONLY the clothing (color, pattern, fabric, style). IGNORE any face/person in this image.
-3. **Write a simple prompt** using the formula above
+1. **Preserve Identity**: Always explicitly state what must remain unchanged
+2. **Avoid Over-Processing**: Include anti-processing constraints (no plastic skin, no haloing)
+3. **Realistic Lighting**: Specify how lighting should match the edit
+4. **Layered Commands**: Combine multiple clear instructions
+5. **Negative Prompts**: Specify what NOT to do
+
+## YOUR ANALYSIS TASKS
+
+### TASK 1: Analyze PERSON IMAGE (Image 1) - EXTREME DETAIL
+Describe every identifiable feature for preservation:
+- Face shape, jawline, cheekbones (specific shapes)
+- Eye details: shape, color, spacing, eyelid type
+- Nose details: bridge, tip, nostril shape
+- Lip shape, fullness
+- Skin: exact tone (e.g., "warm olive", "cool beige"), texture, pores, any marks/moles
+- Hair: color, texture, length, style
+- Current expression and pose
+- Current clothing (what to replace)
+
+### TASK 2: Analyze GARMENT/REFERENCE IMAGE (Image 2) - CLOTHING ONLY
+⚠️ CRITICAL: If there is a person/face in this image, COMPLETELY IGNORE IT.
+Extract ONLY garment details:
+- Type (kurti, dress, shirt, etc.)
+- Color: exact shade with descriptors
+- Pattern: type, colors, scale
+- Fabric: material, texture, sheen
+- Neckline, sleeves, fit
+- Special details: embroidery, buttons, borders
+
+### TASK 3: Write the PROMPT
+
+Structure your prompt with these sections:
+1. **Action**: "Replace the clothing on this [person description]"
+2. **Modification**: "with [detailed garment description]"
+3. **Preservation**: "Keep exact face: [face features], preserve pores and micro-texture, maintain original facial structure and identity"
+4. **Anti-Processing**: "Avoid over-smoothing, no haloing, no plastic skin, no beautification"
+5. **Quality**: "Photo-quality output with realistic skin sheen, natural lighting"
 
 ## OUTPUT FORMAT (JSON)
 {
-  "personDescription": "Description of the person's face and appearance",
-  "referenceDescription": "Description of the GARMENT ONLY (ignore any face in garment image)",
-  "prompt": "The edit prompt following the formula"
+  "personDescription": "Extremely detailed description of person's face and features",
+  "referenceDescription": "Detailed description of GARMENT ONLY (no face/person details)",
+  "prompt": "The complete photo-quality edit prompt"
 }
 
-## PROMPT EXAMPLES
+## PHOTO-QUALITY PROMPT EXAMPLES
 
-For clothing change:
-"Replace the clothing on this young woman with a deep maroon sleeveless kurti with small white embroidered motifs. Keep her exact face: oval face, warm olive skin, dark brown eyes, thick eyebrows, straight nose, full lips, long wavy black hair, gentle smile. Realistic photo, soft natural light."
+**Natural Virtual Try-On (Best Practice):**
+"Replace the clothing on this young woman with a deep maroon sleeveless kurti featuring small white embroidered geometric motifs and a round neckline. Keep her exact face unchanged: oval face shape, warm olive skin with natural pores and micro-texture, dark brown almond-shaped eyes, thick natural eyebrows, straight nose with subtle bridge, full lips with defined cupid's bow, long wavy black hair. Maintain original facial structure and identity. Preserve skin texture - no smoothing, no beautification, no haloing. Photo-quality with realistic skin sheen under soft natural light. The garment should fit naturally with proper draping and realistic fabric shadows."
+
+**Key Phrases That Work:**
+- "preserve pores and micro-texture"
+- "maintain original facial structure and identity"
+- "avoid over-smoothing and haloing"
+- "no plastic skin"
+- "photo-quality with realistic skin sheen"
+- "no beautification"
+- "natural highlight roll-off"
 
 For background change:
 "Change the background to a sunlit palace courtyard with stone pillars. Keep her exact face and clothing unchanged: [face details]. Natural lighting that matches the new environment."
@@ -160,16 +203,28 @@ For background change:
 - NEVER include face details from the garment reference image`
 
   // =========================================================================
-  // USER PROMPT: Simple task instruction
+  // USER PROMPT: Photo-quality edit task instruction
   // =========================================================================
-  const userPrompt = `Analyze these images and write a prompt for ${editType.replace('_', ' ')}.
+  const userPrompt = `Analyze these images and write a PHOTO-QUALITY edit prompt for ${editType.replace('_', ' ')}.
 
-IMAGE 1: The person (preserve their exact face)
-IMAGE 2: ${editType === 'background_change' ? 'Background reference' : 'Garment reference (IGNORE any face, extract clothing only)'}
+**IMAGE 1: PERSON (Identity Source)**
+This person's face and body MUST remain 100% identical in the output.
+Analyze their facial features in extreme detail for preservation.
 
-${userRequest ? `User request: ${userRequest}` : ''}
+**IMAGE 2: ${editType === 'background_change' ? 'BACKGROUND REFERENCE' : 'GARMENT REFERENCE'}**
+${editType === 'background_change' 
+  ? 'Extract only the environment/scene details. Do not change the subject identity.'
+  : 'Extract ONLY the clothing details (color, pattern, fabric, style). If there is a person wearing the garment, COMPLETELY IGNORE their face - we only want the garment.'}
 
-Write a simple, direct prompt following the formula: Action + Element + Style + Details.`
+${userRequest ? `**USER REQUEST:** ${userRequest}` : ''}
+
+**MODEL:** ${model === 'pro' ? 'Gemini 3 Pro (can handle detailed prompts)' : 'Gemini 2.5 Flash (keep prompt focused but complete)'}
+
+Write the prompt following the photo-quality template:
+1. Action + Subject + Modification
+2. Preservation clause (exact face features)
+3. Anti-processing constraints (no plastic skin, preserve pores)
+4. Quality parameters (photo-realistic, natural lighting)`
 
   try {
     console.log('🤖 GPT-4o mini: Analyzing images with strict identity extraction...')

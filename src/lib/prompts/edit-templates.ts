@@ -31,12 +31,19 @@ export interface EditPromptInput {
 }
 
 /**
- * Build a strict "image edit" instruction string.
+ * Build a strict "photo-quality image edit" instruction string.
  *
- * Based on Nano Banana Pro prompting guidance: keep structure clear and direct,
- * emphasize editing instructions and reference roles.
+ * Based on:
+ * - Nano Banana Pro prompting guidance
+ * - 30 Gemini Prompts for Photo-Quality Edits
+ * - Google's Gemini Prompt Design guide
  *
- * Reference: `https://www.imagine.art/blogs/nano-banana-pro-prompt-guide`
+ * Key principles:
+ * 1. Preserve pores and micro-texture
+ * 2. Maintain original facial structure and identity
+ * 3. Avoid over-smoothing and haloing
+ * 4. No plastic skin, no beautification
+ * 5. Photo-quality with realistic skin sheen
  */
 export function buildEditPrompt(input: EditPromptInput): string {
   const {
@@ -52,8 +59,7 @@ export function buildEditPrompt(input: EditPromptInput): string {
 
   const userLine = userRequest?.trim() ? `User request: ${userRequest.trim()}` : ''
 
-  // The "6 factors" guideline distilled into a strict edit context:
-  // subject = the person image, composition = camera/framing, action = pose, setting = background, style = photoreal edit, editing instructions = editType rules.
+  // Optional composition adjustments
   const compositionLines: string[] = []
   if (camera?.trim()) compositionLines.push(`Camera/Framing: ${camera.trim()}`)
   if (pose?.trim()) compositionLines.push(`Pose: ${pose.trim()} (slight change only; keep body shape)`)
@@ -67,29 +73,36 @@ export function buildEditPrompt(input: EditPromptInput): string {
 
   const perEditRules = getEditRules(editType)
 
-  // Model-specific strictness (Pro can handle slightly longer prompts)
+  // Model-specific strictness
   const strictnessNote =
     model === 'pro'
-      ? 'Follow instructions with maximum fidelity. This is a precise PHOTO EDIT, not a new generation.'
-      : 'Follow instructions. This is a PHOTO EDIT, not a new generation.'
+      ? 'This is a PHOTO-QUALITY edit with maximum fidelity. Not a new generation.'
+      : 'This is a PHOTO-QUALITY edit. Not a new generation.'
 
   return [
-    'MODE: IMAGE EDIT / PHOTO REMIX',
+    'MODE: PHOTO-QUALITY IMAGE EDIT',
     strictnessNote,
     '',
     'SUBJECT:',
-    '- Use the PERSON IMAGE as the only source of identity/face/body.',
+    '- Use the PERSON IMAGE as the ONLY source of identity/face/body.',
     '',
-    'IDENTITY RULES (NON-NEGOTIABLE):',
+    'IDENTITY PRESERVATION (NON-NEGOTIABLE):',
     '- Face must remain 100% identical to the PERSON IMAGE.',
-    '- No beautification: do not slim face, do not change eyes/nose/lips, do not smooth skin.',
-    '- Preserve age signs, skin texture, moles, scars, pores. No de-aging.',
+    '- Preserve pores, micro-texture, skin grain, and natural imperfections.',
+    '- Maintain original facial structure: jawline, cheekbones, eye spacing.',
+    '- Keep all unique features: moles, freckles, scars, age signs.',
+    '- No beautification: do not slim face, do not change eyes/nose/lips.',
+    '- No skin smoothing: avoid over-smoothing, no airbrushing effect.',
     '- Preserve gender expression and body proportions exactly.',
-    '- Output must contain exactly ONE person (the person from the PERSON IMAGE).',
+    '- Output must contain exactly ONE person (from PERSON IMAGE).',
     '',
-    'REALISM RULES:',
-    '- Real-to-life photo edit. No CGI/plastic skin. No overly perfect studio look unless requested.',
-    '- Keep realistic lighting interaction, shadows, and occlusion.',
+    'PHOTO-QUALITY RULES (Critical):',
+    '- No plastic skin: maintain realistic skin sheen and texture.',
+    '- No haloing: edges must be clean without glow artifacts.',
+    '- No over-sharpening: natural micro-contrast only.',
+    '- Realistic lighting: coherent shadows, highlights, and reflections.',
+    '- Natural highlight roll-off: no clipped foreheads or blown areas.',
+    '- Real-to-life output: no CGI, no uncanny valley effect.',
     '',
     'EDIT INSTRUCTIONS:',
     ...perEditRules,
@@ -99,9 +112,14 @@ export function buildEditPrompt(input: EditPromptInput): string {
     lightingLines.length ? ['LIGHTING:', ...lightingLines, ''].join('\n') : '',
     userLine,
     '',
-    'FINAL CHECK:',
-    '- Identity (face) must match PERSON IMAGE exactly.',
-    '- If any instruction conflicts with identity, IGNORE the instruction and keep identity.',
+    'QUALITY CHECKLIST (self-verify):',
+    '- [ ] Skin micro-texture visible at 100% zoom',
+    '- [ ] Natural highlight roll-off (no clipped areas)',
+    '- [ ] Clean edges, zero halos',
+    '- [ ] Color-true skin tones',
+    '- [ ] Identity matches PERSON IMAGE exactly',
+    '',
+    'If any instruction conflicts with identity preservation, IGNORE IT and keep identity.',
   ]
     .filter(Boolean)
     .join('\n')
@@ -111,33 +129,44 @@ function getEditRules(editType: EditType): string[] {
   switch (editType) {
     case 'clothing_change':
       return [
-        '- Replace the subject clothing to match the GARMENT REFERENCE image.',
-        '- GARMENT REFERENCE is for CLOTHING ONLY: extract only garment color/pattern/texture/shape.',
-        '- Ignore any face/person/body in the GARMENT REFERENCE completely.',
-        '- Do a complete garment replacement (not a pasted overlay). Match neckline/sleeves accurately.',
+        '- Replace the subject\'s clothing to match the GARMENT REFERENCE image.',
+        '- GARMENT REFERENCE: Extract ONLY the garment (color, pattern, texture, fabric, style).',
+        '- IGNORE any face/person/body in the GARMENT REFERENCE completely.',
+        '- Complete garment replacement: natural fit, proper draping, realistic fabric shadows.',
+        '- Match neckline, sleeves, and silhouette accurately from reference.',
+        '- Fabric should interact naturally with body and lighting.',
       ]
     case 'background_change':
       return [
         '- Replace the background to match the BACKGROUND REFERENCE image.',
-        '- BACKGROUND REFERENCE is for environment only (do not change the subject identity).',
-        '- Match perspective, depth, and lighting so the subject looks truly in the scene.',
+        '- BACKGROUND REFERENCE: Environment only (do not change subject identity).',
+        '- Match perspective, depth, and lighting so subject looks truly in scene.',
+        '- Apply believable light wrap on subject edges.',
+        '- No mismatched reflections or shadows.',
+        '- Seamless blend without halos or cut-out edges.',
       ]
     case 'lighting_change':
       return [
-        '- Adjust lighting on the subject and scene as requested (keep identity unchanged).',
-        '- Preserve skin texture; do not retouch or beautify.',
+        '- Adjust lighting on subject and scene as requested (keep identity unchanged).',
+        '- Preserve skin texture: do not retouch, smooth, or beautify.',
         '- Lighting must be physically plausible: coherent shadows and highlights.',
+        '- Apply subtle dodge & burn to balance midtones if needed.',
+        '- Natural highlight roll-off: no clipping on skin areas.',
       ]
     case 'pose_change':
       return [
-        '- Make a slight pose change as requested while keeping body type and proportions.',
+        '- Make a slight pose change while keeping body type and proportions.',
         '- Keep face identity unchanged and recognizable.',
-        '- Keep the edit subtle: do not alter the person into a different model.',
+        '- Keep the edit subtle: do not alter into a different model.',
+        '- Maintain fabric drape consistent with new pose.',
+        '- Preserve all facial features exactly.',
       ]
     case 'camera_change':
       return [
         '- Adjust camera angle/framing slightly as requested (keep identity unchanged).',
         '- Maintain photorealistic optics and perspective.',
+        '- Simulate lens characteristics (depth of field, bokeh) if applicable.',
+        '- Keep subject within focus plane; background gently defocused if appropriate.',
         '- Do not change the person into a different face/body.',
       ]
     default:
