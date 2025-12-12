@@ -19,6 +19,9 @@ export interface TryOnOptions {
   model?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview'
   aspectRatio?: '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'
   resolution?: '1K' | '2K' | '4K' // Pro model only
+  // NEW: Text-based scene/background description (for presets)
+  sceneDescription?: string // e.g. "Golden hour in open fields with warm natural light"
+  lightingDescription?: string // e.g. "Soft warm golden hour light"
   background?: string
   pose?: string
   expression?: string
@@ -44,6 +47,8 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     model = 'gemini-2.5-flash-image',
     aspectRatio = '4:5',
     resolution = '2K',
+    sceneDescription,
+    lightingDescription,
   } = options
 
   try {
@@ -106,39 +111,87 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     }
 
     // STEP 4: JSON structured edit instruction
+    // Determine what changes to make based on available inputs
+    const hasSceneChange = !!sceneDescription
+    const hasClothingChange = !!clothingImage
+    const hasLightingChange = !!lightingDescription
+    
+    // Build change object dynamically
+    const changes: Record<string, any> = {}
+    
+    if (hasClothingChange) {
+      changes.clothing = {
+        action: "Replace with garment from clothing reference image",
+        fit: "Natural draping and realistic fabric shadows"
+      }
+    }
+    
+    if (hasSceneChange) {
+      changes.background = {
+        action: "Change background/environment",
+        target: sceneDescription
+      }
+    }
+    
+    if (hasLightingChange) {
+      changes.lighting = {
+        action: "Adjust lighting",
+        target: lightingDescription
+      }
+    }
+    
+    // Determine primary action description
+    let primaryAction = "Virtual try-on edit"
+    if (hasClothingChange && hasSceneChange) {
+      primaryAction = "Replace clothing AND change background/scene"
+    } else if (hasClothingChange) {
+      primaryAction = "Replace clothing only"
+    } else if (hasSceneChange) {
+      primaryAction = "Change background/scene"
+    }
+
     const jsonPrompt = {
       task: "image_edit",
       mode: "virtual_try_on",
-      instructions: {
-        primary_action: "Replace clothing only",
-        preserve: {
-          face: "MUST keep exact same face from subject image",
-          identity: "Same person, same facial features, same skin tone",
-          hair: "Same hair color, style, and texture",
-          body: "Same body proportions and pose",
-          skin_quality: "Preserve natural skin texture, pores, imperfections"
-        },
-        change: {
-          clothing: "Replace with garment from clothing reference image",
-          fit: "Natural draping and realistic fabric shadows"
-        },
-        ignore: {
-          clothing_reference_face: "If clothing reference shows a person, completely ignore their face"
-        },
-        quality: {
-          style: "Photo-realistic edit, not AI generation",
-          lighting: "Natural, consistent with original image",
-          texture: "Maintain realistic skin and fabric textures"
-        }
+      primary_action: primaryAction,
+      preserve: {
+        face: "MUST keep exact same face from subject image - this is NON-NEGOTIABLE",
+        identity: "Same person, same facial features, same skin tone, same expression",
+        hair: "Same hair color, style, and texture",
+        body: "Same body proportions",
+        skin_quality: "Preserve natural skin texture, pores, imperfections - no smoothing"
       },
-      additional_notes: prompt
+      change: changes,
+      ignore: {
+        clothing_reference_face: "If clothing reference shows a person/model, completely IGNORE their face - use ONLY the garment"
+      },
+      quality: {
+        output: "Photo-realistic edit, not AI generation",
+        skin: "Maintain realistic skin texture with natural pores",
+        lighting: hasLightingChange ? lightingDescription : "Match scene naturally",
+        coherence: "All elements must look naturally composited"
+      },
+      additional_context: prompt
     }
+    
+    // Build execution summary based on what's being changed
+    let executionSummary = "Execute this edit: "
+    if (hasClothingChange) {
+      executionSummary += "Replace the clothing with the garment from the reference. "
+    }
+    if (hasSceneChange) {
+      executionSummary += `Place the subject in: ${sceneDescription}. `
+    }
+    if (hasLightingChange) {
+      executionSummary += `Apply lighting: ${lightingDescription}. `
+    }
+    executionSummary += "The face MUST remain exactly the same person from the subject image."
 
     contents.push(`
 Edit instruction (JSON format):
 ${JSON.stringify(jsonPrompt, null, 2)}
 
-Execute this edit: Take the subject from the first image and replace their clothing with the garment from the clothing reference. The face must remain exactly the same - do not generate a new face.`)
+${executionSummary}`)
 
     // STEP 5: Add accessories if any
     if (accessoryImages.length > 0) {

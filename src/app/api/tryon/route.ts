@@ -173,7 +173,15 @@ export async function POST(request: Request) {
           console.log(`   Camera: ${presetResult.scenario.camera.angle}, ${presetResult.scenario.camera.framing}`)
           console.log(`   Lighting: ${presetResult.scenario.lighting.time}, ${presetResult.scenario.lighting.quality}`)
 
-          // Generate the image with the intelligent preset prompt
+          // Extract scene and lighting descriptions from the selected scenario
+          const scenario = presetResult.scenario
+          const sceneDescription = scenario.background
+          const lightingDescription = `${scenario.lighting.quality} ${scenario.lighting.type} lighting, ${scenario.lighting.color.replace('_', ' ')} tones, ${scenario.lighting.time.replace('_', ' ')} atmosphere`
+
+          console.log(`🌄 Scene: ${sceneDescription}`)
+          console.log(`💡 Lighting: ${lightingDescription}`)
+
+          // Generate the image with the intelligent preset prompt + scene/lighting
           const generatedImage = await generateTryOn({
             personImage: normalizedPerson,
             personImages: personImages?.map(img => normalizeBase64(img)),
@@ -186,6 +194,9 @@ export async function POST(request: Request) {
             model: geminiModel as 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview',
             aspectRatio: reqAspectRatio as any,
             resolution: reqResolution as any,
+            // NEW: Pass scene and lighting from preset
+            sceneDescription,
+            lightingDescription,
           })
 
           // Save and return
