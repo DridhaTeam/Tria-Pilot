@@ -172,48 +172,40 @@ THE GOAL: Someone reading your description should be able to visualize the EXACT
 
 ### TASK 3: Write the PROMPT
 
-Structure your prompt with these sections:
-1. **Action**: "Replace the clothing on this [person description]"
-2. **Modification**: "with [detailed garment description]"
-3. **Preservation**: "Keep exact face: [face features], preserve pores and micro-texture, maintain original facial structure and identity"
-4. **Anti-Processing**: "Avoid over-smoothing, no haloing, no plastic skin, no beautification"
-5. **Quality**: "Photo-quality output with realistic skin sheen, natural lighting"
+Use the NANO BANANA face consistency method:
+- Say "this person" to refer to the person from the uploaded image
+- This is the official way to maintain face consistency in Nano Banana
+
+Structure:
+1. **Start**: "Change the clothing on this person to..."
+2. **Garment**: [EXACT detailed garment description]
+3. **Face rule**: "Keep this person's exact face unchanged."
 
 ## OUTPUT FORMAT (JSON)
 {
-  "personDescription": "Extremely detailed description of person's face and features",
-  "referenceDescription": "Detailed description of GARMENT ONLY (no face/person details)",
-  "prompt": "The complete photo-quality edit prompt"
+  "personDescription": "Brief description of person for logging",
+  "referenceDescription": "EXACT detailed description of GARMENT ONLY",
+  "prompt": "The simple, direct prompt using 'this person'"
 }
 
-## PHOTO-QUALITY PROMPT EXAMPLES
+## PROMPT EXAMPLES (Nano Banana Style)
 
-**Natural Virtual Try-On (Best Practice):**
-"Replace the clothing on this young woman with a deep maroon sleeveless kurti featuring small white embroidered geometric motifs and a round neckline. Keep her exact face unchanged: oval face shape, warm olive skin with natural pores and micro-texture, dark brown almond-shaped eyes, thick natural eyebrows, straight nose with subtle bridge, full lips with defined cupid's bow, long wavy black hair. Maintain original facial structure and identity. Preserve skin texture - no smoothing, no beautification, no haloing. Photo-quality with realistic skin sheen under soft natural light. The garment should fit naturally with proper draping and realistic fabric shadows."
+**Clothing Change:**
+"Change the clothing on this person to a deep maroon sleeveless tunic with a round neckline, front placket with two buttons, and small white geometric embroidered motifs scattered across the fabric. Keep this person's exact face unchanged."
 
-**Key Phrases That Work:**
-- "preserve pores and micro-texture"
-- "maintain original facial structure and identity"
-- "avoid over-smoothing and haloing"
-- "no plastic skin"
-- "photo-quality with realistic skin sheen"
-- "no beautification"
-- "natural highlight roll-off"
+**Background Change:**
+"Place this person in a sunlit forest path with dappled light through trees. Keep this person's exact face and current clothing unchanged."
 
-For background change:
-"Change the background to a sunlit palace courtyard with stone pillars. Keep her exact face and clothing unchanged: [face details]. Natural lighting that matches the new environment."
+**With Background:**
+"Change the clothing on this person to a deep maroon kurti with white embroidery. Place this person in a Jaipur palace courtyard. Keep this person's exact face unchanged."
 
 ## RULES
-- Start with an ACTION WORD: Replace, Change, Add, Make, Remove
-- Be EXTREMELY SPECIFIC about the garment - the AI must replicate it EXACTLY
-- Include EXACT color (not generic "red" but "deep maroon/burgundy wine")
-- Include EXACT pattern details (not generic "embroidery" but "small white cross-stitch geometric motifs")
-- Include ALL visible details: neckline, buttons, placket, fit, silhouette
-- Be specific about the face details to preserve
-- End with style/lighting notes
-- Keep it concise but complete
-- NEVER include face details from the garment reference image
-- The output garment MUST be identical to the reference garment`
+- Use "this person" to refer to the uploaded person (this is how Nano Banana maintains face consistency)
+- Be EXTREMELY SPECIFIC about the garment (EXACT color, pattern, neckline, fit)
+- Always end with "Keep this person's exact face unchanged"
+- Keep prompts SHORT and DIRECT - Nano Banana works better with simple prompts
+- NEVER describe the face in detail - just say "this person's face"
+- If the clothing reference shows a different person, say "ignore the person in the clothing reference"`
 
   // =========================================================================
   // USER PROMPT: Photo-quality edit task instruction

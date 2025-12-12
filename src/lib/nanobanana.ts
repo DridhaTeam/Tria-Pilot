@@ -61,45 +61,25 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // CRITICAL: This is an IMAGE EDIT task, not image generation
-    // The person's face MUST be preserved exactly - this is non-negotiable
+    // NANO BANANA FACE CONSISTENCY METHOD:
+    // 1. Upload reference image of the person
+    // 2. Use "this person" / "this woman" / "this man" to refer to them
+    // This is the official way to maintain face consistency!
     // ═══════════════════════════════════════════════════════════════════════
 
-    // STEP 1: Establish this is an EDIT task with the person as the subject
-    contents.push(`TASK: EDIT this photo. Change ONLY the clothing. Keep the SAME person.
-
-This is the person to edit. The face in the output MUST be THIS EXACT PERSON:`)
-    
+    // STEP 1: Person image FIRST (this establishes "this person")
     contents.push({
       inlineData: {
         data: cleanPersonImage,
         mimeType: 'image/jpeg',
       },
     } as any)
-    console.log('📸 Added person image (1st time - establishing subject)')
+    console.log('📸 Added person image')
 
-    // STEP 2: Show the person image AGAIN to reinforce identity
-    contents.push('SAME PERSON - memorize this face (eyes, nose, lips, jawline, skin tone):')
-    contents.push({
-      inlineData: {
-        data: cleanPersonImage,
-        mimeType: 'image/jpeg',
-      },
-    } as any)
-    console.log('📸 Added person image (2nd time - reinforcing identity)')
-
-    // STEP 3: Now show the clothing reference with clear separation
+    // STEP 2: Clothing reference (if clothing change)
     if (editType === 'clothing_change' && clothingImage) {
       const cleanClothingImage = clothingImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanClothingImage && cleanClothingImage.length >= 100) {
-        contents.push(`
----
-CLOTHING REFERENCE (for the garment ONLY):
-This image shows the NEW CLOTHING to put on the person above.
-⚠️ WARNING: If you see a different person wearing this clothing, IGNORE that person's face completely.
-Extract ONLY: color, pattern, neckline, sleeves, fit, fabric.
-The face in output must still be the FIRST person shown above.
----`)
         contents.push({
           inlineData: {
             data: cleanClothingImage,
@@ -110,15 +90,10 @@ The face in output must still be the FIRST person shown above.
       }
     }
 
+    // STEP 3: Background reference (if background change)
     if (editType === 'background_change' && backgroundImage) {
       const cleanBgImage = backgroundImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanBgImage && cleanBgImage.length >= 100) {
-        contents.push(`
----
-BACKGROUND REFERENCE:
-Place the person from above into this environment.
-The face must still be the FIRST person shown.
----`)
         contents.push({
           inlineData: {
             data: cleanBgImage,
@@ -129,22 +104,20 @@ The face must still be the FIRST person shown.
       }
     }
 
-    // STEP 4: The detailed instruction
-    contents.push(`
----
-EDIT INSTRUCTION:
+    // STEP 4: Simple, strict prompt using "this person" reference
+    // This is the Nano Banana way - refer to "this person" from the uploaded image
+    const strictPrompt = `Edit this photo of this person.
+
 ${prompt}
 
-⚠️ CRITICAL - READ CAREFULLY:
-1. This is a PHOTO EDIT, not new image generation
-2. The OUTPUT must show THE SAME PERSON from the first two images
-3. Same face shape, same eyes, same nose, same lips, same skin tone
-4. Same hair color, same hair style
-5. ONLY change the clothing to match the clothing reference
-6. Do NOT use the face from the clothing reference image
-7. Do NOT generate a new/different person
-8. Preserve skin texture, pores, moles, natural imperfections
----`)
+STRICT RULES:
+- Keep this person's exact face (do not change or generate a new face)
+- Keep this person's exact features, skin tone, and hair
+- Only change the clothing to match the second image
+- If the second image shows a different person wearing the clothes, ignore that person's face entirely
+- Output must show this same person from the first image`
+
+    contents.push(strictPrompt)
 
     // STEP 5: Add accessories if any
     if (accessoryImages.length > 0) {
@@ -153,7 +126,7 @@ ${prompt}
         const cleanAccessory = image.replace(/^data:image\/[a-z]+;base64,/, '')
         if (cleanAccessory && cleanAccessory.length >= 100) {
           const label = accessoryLabels[idx] || `accessory_${idx + 1}`
-          contents.push(`ACCESSORY - ${label}:`)
+          contents.push(`Also add this ${label}:`)
           contents.push({
             inlineData: {
               data: cleanAccessory,
@@ -165,27 +138,7 @@ ${prompt}
       })
     }
 
-    // STEP 6: Final reminder - show person image THIRD time
-    contents.push(`
----
-FINAL REMINDER - This is the person who must appear in the output:`)
-    contents.push({
-      inlineData: {
-        data: cleanPersonImage,
-        mimeType: 'image/jpeg',
-      },
-    } as any)
-    console.log('📸 Added person image (3rd time - final reminder)')
-
-    contents.push(`
-OUTPUT REQUIREMENTS:
-✓ Face = THIS PERSON (shown 3 times above)
-✓ Clothing = From the clothing reference
-✓ Do NOT use any face from the clothing reference
-✓ Photo-realistic quality
-✓ Preserve skin texture, no beautification
-
-Generate the edited photo now.`)
+    // No need for repeated images - Nano Banana understands "this person" from the first image
 
     console.log('✅ Contents prepared')
 
