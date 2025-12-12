@@ -109,18 +109,10 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       }
     }
 
-    // STEP 3: THE INSTRUCTION - Comes AFTER both images are shown
-    contents.push(`
-[INSTRUCTION]
-${prompt}
+    // STEP 3: THE INSTRUCTION - Simple and direct
+    contents.push(`${prompt}
 
-CRITICAL RULES:
-1. The OUTPUT face must be IDENTICAL to IMAGE 1 (the person)
-2. The OUTPUT clothing must match IMAGE 2 (the garment reference)
-3. If IMAGE 2 shows a person wearing clothes, IGNORE their face - only use the clothing
-4. Preserve skin texture, pores, and natural imperfections from IMAGE 1
-5. No beautification, no smoothing, no haloing
-`)
+Use the face from IMAGE 1. Use the clothing from IMAGE 2. Ignore any face in IMAGE 2.`)
 
     // STEP 4: Add accessories if any
     if (accessoryImages.length > 0) {
@@ -141,15 +133,8 @@ CRITICAL RULES:
       })
     }
 
-    // STEP 5: Final reminder with person image again
-    contents.push('[FINAL REMINDER] Generate the image now. The person in the output must look like this (same face, same features):')
-    contents.push({
-      inlineData: {
-        data: cleanPersonImage,
-        mimeType: 'image/jpeg',
-      },
-    } as any)
-    contents.push('Output: The person from IMAGE 1 wearing the clothing from IMAGE 2. Photo-realistic, no beautification.')
+    // STEP 5: Final reminder - keep it simple
+    contents.push('Generate the image. Same face as IMAGE 1, clothing from IMAGE 2.')
 
     console.log('✅ Contents prepared')
 
