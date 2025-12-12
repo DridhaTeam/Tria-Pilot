@@ -65,55 +65,26 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     // This ensures the model sees the face to copy BEFORE anything else
     // ═══════════════════════════════════════════════════════════════════════
 
-    // STEP 1: Show the person image FIRST - this is THE face to use
-    contents.push('THIS IS THE PERSON. USE THIS EXACT FACE IN THE OUTPUT:')
+    // =========================================================================
+    // NANO BANANA BEST PRACTICE: Image + Image + Instruction
+    // Show BOTH images FIRST, then give the instruction referencing them
+    // =========================================================================
+
+    // STEP 1: PERSON IMAGE - The identity source
+    contents.push('[IMAGE 1 - PERSON] This is the person. Keep this exact face in the output:')
     contents.push({
       inlineData: {
         data: cleanPersonImage,
         mimeType: 'image/jpeg',
       },
     } as any)
+    console.log('📸 Added person image')
 
-    // STEP 2: Reinforce with duplicate for Flash, multiple for Pro
-    if (isPro) {
-      const allPersonImages = [cleanPersonImage]
-      for (const additionalImage of personImages.slice(0, 4)) {
-        const cleanAdditional = additionalImage.replace(/^data:image\/[a-z]+;base64,/, '')
-        if (cleanAdditional && cleanAdditional.length >= 100) {
-          allPersonImages.push(cleanAdditional)
-        }
-      }
-      // Add more references of the same person
-      for (let i = 1; i < Math.min(allPersonImages.length, 3); i++) {
-        contents.push('SAME PERSON - ANOTHER ANGLE:')
-        contents.push({
-          inlineData: {
-            data: allPersonImages[i],
-            mimeType: 'image/jpeg',
-          },
-        } as any)
-      }
-      console.log(`📸 Added ${Math.min(allPersonImages.length, 3)} person images`)
-    } else {
-      // Flash: duplicate the face reference
-      contents.push('SAME PERSON AGAIN - MEMORIZE THIS FACE:')
-      contents.push({
-        inlineData: {
-          data: cleanPersonImage,
-          mimeType: 'image/jpeg',
-        },
-      } as any)
-      console.log('📸 Added person image 2x')
-    }
-
-    // STEP 3: Strict edit prompt (built upstream)
-    contents.push(prompt)
-
-    // STEP 4: Add reference images (role-labelled)
+    // STEP 2: REFERENCE IMAGE - The clothing/background to apply
     if (editType === 'clothing_change' && clothingImage) {
-      contents.push('GARMENT REFERENCE (GARMENT ONLY; IGNORE ANY FACE/PERSON IN THIS IMAGE):')
       const cleanClothingImage = clothingImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanClothingImage && cleanClothingImage.length >= 100) {
+        contents.push('[IMAGE 2 - GARMENT] This is the clothing to put on the person. Extract ONLY the garment (ignore any face/person in this image):')
         contents.push({
           inlineData: {
             data: cleanClothingImage,
@@ -125,9 +96,9 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
     }
 
     if (editType === 'background_change' && backgroundImage) {
-      contents.push('BACKGROUND REFERENCE (ENVIRONMENT ONLY; DO NOT CHANGE SUBJECT IDENTITY):')
       const cleanBgImage = backgroundImage.replace(/^data:image\/[a-z]+;base64,/, '')
       if (cleanBgImage && cleanBgImage.length >= 100) {
+        contents.push('[IMAGE 2 - BACKGROUND] This is the new background/environment:')
         contents.push({
           inlineData: {
             data: cleanBgImage,
@@ -138,34 +109,20 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       }
     }
 
-    // Optional: allow supplying both refs (future-proof)
-    if (editType !== 'clothing_change' && clothingImage) {
-      contents.push('OPTIONAL GARMENT REFERENCE (GARMENT ONLY; IGNORE ANY FACE/PERSON IN THIS IMAGE):')
-      const cleanClothingImage = clothingImage.replace(/^data:image\/[a-z]+;base64,/, '')
-      if (cleanClothingImage && cleanClothingImage.length >= 100) {
-        contents.push({
-          inlineData: {
-            data: cleanClothingImage,
-            mimeType: 'image/jpeg',
-          },
-        } as any)
-      }
-    }
+    // STEP 3: THE INSTRUCTION - Comes AFTER both images are shown
+    contents.push(`
+[INSTRUCTION]
+${prompt}
 
-    if (editType !== 'background_change' && backgroundImage) {
-      contents.push('OPTIONAL BACKGROUND REFERENCE (ENVIRONMENT ONLY):')
-      const cleanBgImage = backgroundImage.replace(/^data:image\/[a-z]+;base64,/, '')
-      if (cleanBgImage && cleanBgImage.length >= 100) {
-        contents.push({
-          inlineData: {
-            data: cleanBgImage,
-            mimeType: 'image/jpeg',
-          },
-        } as any)
-      }
-    }
+CRITICAL RULES:
+1. The OUTPUT face must be IDENTICAL to IMAGE 1 (the person)
+2. The OUTPUT clothing must match IMAGE 2 (the garment reference)
+3. If IMAGE 2 shows a person wearing clothes, IGNORE their face - only use the clothing
+4. Preserve skin texture, pores, and natural imperfections from IMAGE 1
+5. No beautification, no smoothing, no haloing
+`)
 
-    // STEP 5: Add accessories if any
+    // STEP 4: Add accessories if any
     if (accessoryImages.length > 0) {
       const accessoryLabels = accessoryTypes.length > 0 ? accessoryTypes : accessoryImages.map(() => 'accessory')
       accessoryImages.slice(0, 4).forEach((image, idx) => {
@@ -184,15 +141,15 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       })
     }
 
-    // STEP 6: Final face reminder with image again
-    contents.push('FINAL CHECK - This is the face that MUST appear in output:')
+    // STEP 5: Final reminder with person image again
+    contents.push('[FINAL REMINDER] Generate the image now. The person in the output must look like this (same face, same features):')
     contents.push({
       inlineData: {
         data: cleanPersonImage,
         mimeType: 'image/jpeg',
       },
     } as any)
-    contents.push('Generate the edited image now. The face MUST match the person shown.')
+    contents.push('Output: The person from IMAGE 1 wearing the clothing from IMAGE 2. Photo-realistic, no beautification.')
 
     console.log('✅ Contents prepared')
 
