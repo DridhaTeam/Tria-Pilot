@@ -91,27 +91,32 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       if (match) garmentDesc = match[1].trim()
     }
 
-    // Build simple instruction
-    let simplePrompt = `Edit this photo of this person:\n\n`
+    // Build simple instruction with EXACT emphasis
+    let simplePrompt = `Edit this photo. Keep the EXACT same person, EXACT same face.\n\n`
     
     if (hasClothingChange) {
-      simplePrompt += `• Dress this person in ${garmentDesc}\n`
+      simplePrompt += `• Dress this EXACT person in ${garmentDesc}\n`
     }
     if (hasSceneChange) {
-      simplePrompt += `• Place this person in: ${sceneDescription}\n`
+      simplePrompt += `• Place this EXACT person in: ${sceneDescription}\n`
     }
     if (hasLightingChange) {
       simplePrompt += `• Apply ${lightingDescription}\n`
     }
     
-    simplePrompt += `\nCRITICAL: Keep this person's EXACT same face - same eyes, nose, lips, skin tone, facial structure. Do not generate a new face.`
+    simplePrompt += `
+EXACT FACE REQUIRED:
+- EXACT same eyes, EXACT same nose, EXACT same lips
+- EXACT same skin tone, EXACT same facial structure  
+- EXACT same hair color and style
+- Do NOT generate a new face - use the EXACT face from the photo above`
     
     if (hasClothingChange) {
-      simplePrompt += `\n\nClothing reference image follows (use ONLY the garment, ignore any face in it):`
+      simplePrompt += `\n\nClothing reference (use ONLY the garment, IGNORE any face):`
     }
 
     contents.push(simplePrompt)
-    console.log('📝 Added simple edit instruction')
+    console.log('📝 Added EXACT face instruction')
 
     // STEP 3: Clothing reference image
     if (clothingImage) {
@@ -142,8 +147,8 @@ export async function generateTryOn(options: TryOnOptions): Promise<string> {
       }
     }
 
-    // STEP 5: Final reinforcement
-    contents.push(`\nRemember: The output must show THIS EXACT PERSON from the first image, just with different clothing${hasSceneChange ? ' and in the new setting' : ''}. The face must be identical.`)
+    // STEP 5: Final reinforcement with EXACT
+    contents.push(`\nFINAL REQUIREMENT: Output must show the EXACT same person with the EXACT same face from the first image. Only the clothing changes${hasSceneChange ? ' and background' : ''}. EXACT face, EXACT features, EXACT skin.`)
 
     // STEP 5: Add accessories if any
     if (accessoryImages.length > 0) {
